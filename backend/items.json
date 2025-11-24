@@ -1,0 +1,121 @@
+[
+  {"id": 1, "name": "Plastic Bottle", "icon": "🥤",
+    "keywords": ["plastic", "bottle", "water bottle", "soft drink", "juice bottle"],
+    "category": "Plastic", "recyclable": true, "disposal": "Recycle at plastic bin"},
+
+  {"id": 2, "name": "Glass Bottle", "icon": "🍾",
+    "keywords": ["glass", "bottle", "wine", "beer bottle"],
+    "category": "Glass", "recyclable": true, "disposal": "Recycle at glass bin"},
+
+  {"id": 3, "name": "Aluminium Can", "icon": "🥫",
+    "keywords": ["can", "aluminium", "soda can", "tin", "cola"],
+    "category": "Metal", "recyclable": true, "disposal": "Recycle at metal bin"},
+
+  {"id": 4, "name": "Mobile Phone", "icon": "📱",
+    "keywords": ["phone", "mobile", "smartphone", "handset"],
+    "category": "Electronics", "recyclable": false, "disposal": "E-waste center only"},
+
+  {"id": 5, "name": "Laptop", "icon": "💻",
+    "keywords": ["laptop", "computer", "notebook", "pc"],
+    "category": "Electronics", "recyclable": false, "disposal": "E-waste center only"},
+
+  {"id": 6, "name": "Battery", "icon": "🔋",
+    "keywords": ["battery", "aa", "aaa", "rechargeable battery"],
+    "category": "Hazardous", "recyclable": false, "disposal": "Hazardous waste bin"},
+
+  {"id": 7, "name": "Glass Jar", "icon": "🥫",
+    "keywords": ["jar", "glass jar", "pickle jar"],
+    "category": "Glass", "recyclable": true, "disposal": "Recycle at glass bin"},
+
+  {"id": 8, "name": "Paper Sheet", "icon": "📄",
+    "keywords": ["paper", "sheet", "document", "newspaper"],
+    "category": "Paper", "recyclable": true, "disposal": "Recycle at paper bin"},
+
+  {"id": 9, "name": "Cardboard Box", "icon": "📦",
+    "keywords": ["cardboard", "box", "shipping box", "carton"],
+    "category": "Paper", "recyclable": true, "disposal": "Recycle at cardboard section"},
+
+  {"id": 10, "name": "Book", "icon": "📚",
+    "keywords": ["book", "textbook", "novel"],
+    "category": "Donation", "recyclable": true, "disposal": "Donate or reuse"},
+
+  {"id": 11, "name": "Plastic Bag", "icon": "🛍️",
+    "keywords": ["plastic bag", "polybag", "shopping bag"],
+    "category": "Plastic", "recyclable": false, "disposal": "Soft plastic collection center"},
+
+  {"id": 12, "name": "Styrofoam", "icon": "📦",
+    "keywords": ["styrofoam", "foam", "polystyrene"],
+    "category": "Plastic", "recyclable": false, "disposal": "General waste"},
+
+  {"id": 13, "name": "Glass Cup", "icon": "🥛",
+    "keywords": ["cup", "glass cup", "tumbler"],
+    "category": "Glass", "recyclable": true, "disposal": "Glass recycling"},
+
+  {"id": 14, "name": "Clothes", "icon": "👕",
+    "keywords": ["clothes", "jeans", "shirt", "garment"],
+    "category": "Donation", "recyclable": true, "disposal": "Donate or textile recycling"},
+
+  {"id": 15, "name": "Shoes", "icon": "👟",
+    "keywords": ["shoes", "sneakers", "footwear"],
+    "category": "Donation", "recyclable": true, "disposal": "Donate usable pairs"},
+
+  {"id": 16, "name": "Plastic Toy", "icon": "🧸",
+    "keywords": ["toy", "plastic toy"],
+    "category": "Plastic", "recyclable": false, "disposal": "General waste unless marked recyclable"},
+
+  {"id": 17, "name": "Ceramic Mug", "icon": "🍵",
+    "keywords": ["mug", "ceramic", "tea cup"],
+    "category": "Ceramic", "recyclable": false, "disposal": "General waste"},
+
+  {"id": 18, "name": "Light Bulb", "icon": "💡",
+    "keywords": ["bulb", "light bulb"],
+    "category": "Hazardous", "recyclable": false, "disposal": "Hazardous waste bin"},
+
+  {"id": 19, "name": "CD / DVD", "icon": "💿",
+    "keywords": ["cd", "dvd", "disc"],
+    "category": "Electronics", "recyclable": false, "disposal": "E-waste"},
+
+  {"id": 20, "name": "Metal Utensil", "icon": "🍴",
+    "keywords": ["spoon", "fork", "knife", "cutlery"],
+    "category": "Metal", "recyclable": true, "disposal": "Recycle at metal bin"},
+
+  {"id": 21, "name": "Paper Cup", "icon": "🥤",
+    "keywords": ["paper cup", "coffee cup"],
+    "category": "Paper", "recyclable": false, "disposal": "General waste (coated cups)"},
+
+  {"id": 22, "name": "Glass Sauce Bottle", "icon": "🍶",
+    "keywords": ["sauce bottle", "ketchup bottle"],
+    "category": "Glass", "recyclable": true, "disposal": "Glass recycling"},
+
+  {"id": 23, "name": "Cereal Box", "icon": "📦",
+    "keywords": ["cereal", "box", "food box"],
+    "category": "Paper", "recyclable": true, "disposal": "Recycle at paper bin"},
+
+  {"id": 24, "name": "Plastic Container", "icon": "🍱",
+    "keywords": ["tupperware", "plastic container"],
+    "category": "Plastic", "recyclable": true, "disposal": "Recycle at plastic bin if clean"},
+
+  {"id": 25, "name": "Printer Cartridge", "icon": "🖨️",
+    "keywords": ["cartridge", "printer cartridge", "ink"],
+    "category": "Hazardous", "recyclable": false, "disposal": "E-waste drop-off only"},
+
+  {"id": 26, "name": "Phone Battery", "icon": "🔋",
+    "keywords": ["phone battery", "lithium battery"],
+    "category": "Hazardous", "recyclable": false, "disposal": "Hazardous waste center"},
+
+  {"id": 27, "name": "Glass Vase", "icon": "🌺",
+    "keywords": ["vase", "glass vase"],
+    "category": "Glass", "recyclable": false, "disposal": "Not recyclable — general waste"},
+
+  {"id": 28, "name": "Plastic Straw", "icon": "🥤",
+    "keywords": ["straw", "plastic straw"],
+    "category": "Plastic", "recyclable": false, "disposal": "General waste"},
+
+  {"id": 29, "name": "Tetra Pak", "icon": "🥛",
+    "keywords": ["tetra", "tetra pak", "juice box"],
+    "category": "Mixed", "recyclable": true, "disposal": "Special Tetra Pak collection"},
+
+  {"id": 30, "name": "Reusable Bottle", "icon": "🧴",
+    "keywords": ["steel bottle", "metal bottle", "thermos"],
+    "category": "Metal", "recyclable": true, "disposal": "Scrap metal recycling"}
+]

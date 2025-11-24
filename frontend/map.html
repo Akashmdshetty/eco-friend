@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🗺️ Recycling Centers — EcoWise</title>
+
+  <!-- Fonts / icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <!-- MarkerCluster (optional, improves marker UX when many centers) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+
+  <style>
+    :root{
+      --primary:#10B981; --secondary:#3B82F6; --accent:#F59E0B;
+      --bg:#0F172A; --surface:#1E293B; --text:#F8FAFC; --muted:#94A3B8;
+      --glass:rgba(255,255,255,0.06); --glass-border:rgba(255,255,255,0.12);
+      --card-radius:12px;
+    }
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Arial;background:var(--bg);color:var(--text);margin:0;min-height:100vh}
+    .container{max-width:1400px;margin:0 auto;padding:0 1rem}
+    .glass-nav{background:var(--glass);backdrop-filter:blur(12px);border-bottom:1px solid var(--glass-border);padding:12px 0;position:sticky;top:0;z-index:1200}
+    .nav-container{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:1200px;margin:0 auto}
+    .nav-logo{display:flex;align-items:center;gap:8px;font-weight:700}
+    .nav-links{display:flex;gap:12px}
+    .nav-link{padding:8px 12px;border-radius:20px;text-decoration:none;color:var(--text)}
+    .nav-link.active{background:var(--primary);color:#042117}
+
+    .map-container{display:grid;grid-template-columns: 420px 1fr;height:calc(100vh - 80px);gap:0}
+    @media(max-width:980px){.map-container{grid-template-columns:1fr;grid-auto-rows:420px;height:auto}}
+    .sidebar{background:var(--surface);border-right:1px solid var(--glass-border);overflow:auto;padding:18px}
+    .map-view{position:relative;background:#071023}
+    #map{height:100%;width:100%}
+
+    .search-section h2{margin:0 0 8px 0;font-size:1.05rem}
+    .small{color:var(--muted);font-size:0.95rem}
+
+    .location-btn{display:flex;gap:8px;align-items:center;justify-content:center;background:var(--primary);color:#042117;border:none;padding:12px;border-radius:20px;font-weight:600;width:100%;cursor:pointer}
+    .search-box{position:relative;margin-top:12px}
+    .search-input{width:100%;padding:12px 14px 12px 44px;border-radius:999px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text)}
+    .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted)}
+
+    .filter-buttons{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .filter-btn{padding:8px 12px;border-radius:999px;border:1px solid var(--glass-border);background:transparent;color:var(--text);cursor:pointer}
+    .filter-btn.active{background:var(--primary);color:#042117;border-color:var(--primary)}
+
+    .centers-list{margin-top:16px}
+    .center-card{background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--card-radius);padding:12px;margin-bottom:12px;cursor:pointer;transition:transform .18s, border-color .18s}
+    .center-card:hover{transform:translateY(-4px);border-color:var(--primary)}
+    .center-card.active{border-color:var(--primary);background:rgba(16,185,129,0.08)}
+    .center-name{font-weight:700}
+    .center-type{display:inline-block;padding:4px 8px;border-radius:999px;font-size:.8rem;font-weight:700}
+    .center-type.recycling{background:var(--primary);color:#042117}
+    .center-type.donation{background:var(--secondary);color:white}
+    .center-type.special{background:var(--accent);color:#042117}
+
+    .center-services{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .service-tag{background:rgba(255,255,255,0.04);padding:4px 8px;border-radius:999px;font-size:.85rem;color:var(--muted)}
+
+    .center-info{display:flex;justify-content:space-between;align-items:center;margin-top:10px;color:var(--muted);font-size:.9rem}
+
+    .map-controls{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:8px;z-index:1100}
+    .control-btn{background:white;border:none;border-radius:8px;padding:10px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+    .control-btn:active{transform:translateY(1px)}
+
+    /* accessibility focus */
+    .center-card:focus{outline:3px solid rgba(16,185,129,0.18);outline-offset:3px}
+
+    /* tiny loader */
+    .loader{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.35);border-left-color:white;border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <!-- Nav -->
+  <nav class="glass-nav" aria-label="Main navigation">
+    <div class="nav-container container">
+      <div class="nav-logo" aria-hidden="true"><div style="font-size:20px">🌱</div><div>EcoWise</div></div>
+      <div class="nav-links" role="navigation" aria-label="Pages">
+        <a href="home.html" class="nav-link">🏠 Home</a>
+        <a href="analyze.html" class="nav-link">📸 Analyze</a>
+        <a href="map.html" class="nav-link active">🗺️ Map</a>
+        <a href="profile.html" class="nav-link">👤 Profile</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="map-container" role="region" aria-label="Recycling centers map and list">
+      <!-- Sidebar -->
+      <aside class="sidebar" aria-label="Sidebar with search and centers">
+        <div class="search-section" aria-live="polite">
+          <h2>🗺️ Recycling Centers in Hassan</h2>
+          <p class="small">Find recycling, donation and specialty centers near you.</p>
+
+          <button id="useLocationBtn" class="location-btn" aria-label="Use my current location">
+            <i class="fas fa-location-crosshairs"></i> <span style="margin-left:8px">Use My Current Location</span>
+          </button>
+
+          <div class="search-box" aria-hidden="false">
+            <i class="fas fa-search search-icon" aria-hidden="true"></i>
+            <input id="searchInput" class="search-input" type="search" placeholder="Search centers, address or services" aria-label="Search centers">
+          </div>
+
+          <div class="filter-buttons" role="toolbar" aria-label="Filter centers">
+            <button class="filter-btn active" data-filter="all" aria-pressed="true">All</button>
+            <button class="filter-btn" data-filter="recycling" aria-pressed="false">Recycling</button>
+            <button class="filter-btn" data-filter="donation" aria-pressed="false">Donation</button>
+            <button class="filter-btn" data-filter="special" aria-pressed="false">Special</button>
+          </div>
+
+          <div id="centersList" class="centers-list" tabindex="0" style="margin-top:12px"></div>
+        </div>
+      </aside>
+
+      <!-- Map -->
+      <section class="map-view" aria-label="Map view">
+        <div id="map" role="application" aria-label="Map"></div>
+
+        <div class="map-controls" aria-hidden="false">
+          <button class="control-btn" id="zoomInBtn" title="Zoom in" aria-label="Zoom in"><i class="fas fa-plus"></i></button>
+          <button class="control-btn" id="zoomOutBtn" title="Zoom out" aria-label="Zoom out"><i class="fas fa-minus"></i></button>
+          <button class="control-btn" id="resetViewBtn" title="Reset view" aria-label="Reset view"><i class="fas fa-crosshairs"></i></button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- Leaflet and MarkerCluster -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+  <script>
+  (function(){
+    'use strict';
+
+    // Config
+    const API_BASE = window.API_BASE || 'http://localhost:5000';
+    const DEFAULT_COORDS = [13.0069, 76.0991]; // Hassan
+    const DEFAULT_ZOOM = 13;
+    const TIMEOUT_MS = 9000;
+
+    // State
+    let map, markerGroup;
+    let userLocation = null;
+    let userMarker = null;
+    let allCenters = [];
+    let displayedMarkers = [];
+    let currentFilter = 'all';
+    let lastSearch = '';
+    let selectedCardId = null;
+
+    // DOM
+    const centersListEl = document.getElementById('centersList');
+    const searchInput = document.getElementById('searchInput');
+    const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
+    const useLocationBtn = document.getElementById('useLocationBtn');
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const resetViewBtn = document.getElementById('resetViewBtn');
+
+    // Utility helpers
+    function fetchWithTimeout(url, opts = {}, timeout = TIMEOUT_MS) {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('Timeout')), timeout);
+        fetch(url, opts).then(r => { clearTimeout(timer); resolve(r); }).catch(err => { clearTimeout(timer); reject(err); });
+      });
+    }
+
+    function debounce(fn, wait = 250){
+      let t;
+      return (...args) => {
+        clearTimeout(t);
+        t = setTimeout(() => fn.apply(this, args), wait);
+      };
+    }
+
+    function safeText(s){
+      return String(s || '').replace(/[<>]/g, '');
+    }
+
+    // Map init
+    function initMap(){
+      map = L.map('map', { zoomControl: false }).setView(DEFAULT_COORDS, DEFAULT_ZOOM);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+
+      // Use MarkerClusterGroup for better UX with many markers
+      markerGroup = L.markerClusterGroup({ chunkedLoading: true, spiderfyOnMaxZoom: true });
+      map.addLayer(markerGroup);
+
+      // Wire controls
+      zoomInBtn.addEventListener('click', () => map.zoomIn());
+      zoomOutBtn.addEventListener('click', () => map.zoomOut());
+      resetViewBtn.addEventListener('click', () => {
+        if (userLocation) map.setView([userLocation.lat, userLocation.lng], 14);
+        else map.setView(DEFAULT_COORDS, DEFAULT_ZOOM);
+      });
+
+      // Load centers
+      loadCenters();
+    }
+
+    // Load centers (backend with fallback)
+    async function loadCenters(){
+      try {
+        const res = await fetchWithTimeout(`${API_BASE}/recycling-centers`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        // Accept either array or {centers: []}
+        allCenters = Array.isArray(json) ? json : (json.centers || []);
+        processCenters(allCenters);
+      } catch (err) {
+        console.warn('Failed to fetch centers from backend, using mock data.', err);
+        allCenters = mockCenters();
+        processCenters(allCenters);
+      }
+    }
+
+    // Process centers and populate UI + map
+    function processCenters(centers){
+      // Basic normalization
+      centers = centers.map((c, i) => Object.assign({
+        id: c.id ?? (i+1),
+        name: c.name ?? 'Unnamed Center',
+        lat: c.lat ?? c.latitude ?? DEFAULT_COORDS[0],
+        lng: c.lng ?? c.lon ?? c.longitude ?? DEFAULT_COORDS[1],
+        address: c.address ?? '',
+        type: c.type ?? 'recycling',
+        services: c.services ?? [],
+        hours: c.hours ?? 'N/A',
+        phone: c.phone ?? '',
+        rating: c.rating ?? 0,
+        distance: c.distance ?? ''
+      }, c));
+      allCenters = centers;
+      renderCenterList(centers);
+      addMarkers(centers);
+    }
+
+    // Create marker icon
+    function createIcon(type){
+      const color = (type === 'recycling') ? '#10B981' : (type === 'donation') ? '#3B82F6' : '#F59E0B';
+      const html = `<div style="background:${color};width:18px;height:18px;border-radius:999px;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25)"></div>`;
+      return L.divIcon({ html, className: 'ecowise-marker', iconSize: [24,24], iconAnchor: [12,12] });
+    }
+
+    // Add markers to map (clears previous)
+    function addMarkers(centers){
+      markerGroup.clearLayers();
+      displayedMarkers = centers.map(c => {
+        const marker = L.marker([c.lat, c.lng], { icon: createIcon(c.type) });
+        const popupHtml = `
+          <div style="min-width:220px">
+            <h3 style="margin:0 0 6px 0">${safeText(c.name)}</h3>
+            <div style="color:#6b7280;font-size:.9rem;margin-bottom:6px">${safeText(c.address)}</div>
+            <div style="font-size:.9rem;margin-bottom:6px"><strong>Services:</strong> ${safeText((c.services || []).slice(0,4).join(', ') || '—')}</div>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+              <button onclick="window.__ecowise.getDirections(${c.id})" style="background:${'var(--primary)'};color:#042117;border:none;padding:6px 8px;border-radius:6px;cursor:pointer">Directions</button>
+            </div>
+          </div>
+        `;
+        marker.bindPopup(popupHtml);
+        marker.on('click', () => highlightCard(c.id));
+        marker._ecowise_centerId = c.id;
+        return marker;
+      });
+      markerGroup.addLayers(displayedMarkers);
+    }
+
+    // Render sidebar list
+    function renderCenterList(centers){
+      if (!centers || centers.length === 0){
+        centersListEl.innerHTML = `<div class="small">No centers found.</div>`;
+        return;
+      }
+
+      const html = centers.map(c => {
+        const typeClass = c.type === 'recycling' ? 'recycling' : (c.type === 'donation' ? 'donation' : 'special');
+        const services = (c.services || []).slice(0,3).map(s => `<span class="service-tag">${safeText(s)}</span>`).join('');
+        return `
+          <article class="center-card" tabindex="0" data-id="${c.id}" role="button" aria-pressed="false">
+            <div><div class="center-name">${safeText(c.name)}</div><div style="margin-top:6px"><span class="center-type ${typeClass}">${safeText(c.type || 'N/A').toUpperCase()}</span></div></div>
+            <div style="margin-top:8px;color:var(--muted)">${safeText(c.address)}</div>
+            <div class="center-services">${services}${(c.services && c.services.length>3) ? `<span class="service-tag">+${c.services.length-3} more</span>` : ''}</div>
+            <div class="center-info"><div><i class="fas fa-clock"></i> ${safeText(c.hours)}</div><div><i class="fas fa-star"></i> ${safeText(c.rating)}</div></div>
+          </article>
+        `;
+      }).join('');
+      centersListEl.innerHTML = html;
+
+      // Attach click/keyboard handlers
+      centersListEl.querySelectorAll('.center-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const id = Number(card.dataset.id);
+          selectCenter(id);
+        });
+        card.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            const id = Number(card.dataset.id);
+            selectCenter(id);
+          }
+        });
+      });
+    }
+
+    // Highlight card and open map popup
+    function selectCenter(id){
+      const center = allCenters.find(c => c.id === id);
+      if (!center) return;
+      // map view
+      map.setView([center.lat, center.lng], 15, { animate: true, duration: 0.4 });
+      // open popup on corresponding marker
+      const marker = displayedMarkers.find(m => m._ecowise_centerId === id);
+      if (marker) marker.openPopup();
+
+      // visual highlight in list
+      centersListEl.querySelectorAll('.center-card').forEach(card => {
+        if (Number(card.dataset.id) === id) {
+          card.classList.add('active');
+          card.setAttribute('aria-pressed','true');
+          card.scrollIntoView({ behavior:'smooth', block:'center' });
+        } else {
+          card.classList.remove('active');
+          card.setAttribute('aria-pressed','false');
+        }
+      });
+      selectedCardId = id;
+    }
+
+    // Highlight card by id (from marker click)
+    function highlightCard(id){
+      const el = centersListEl.querySelector(`.center-card[data-id="${id}"]`);
+      if (el) {
+        el.classList.add('active');
+        el.scrollIntoView({ behavior:'smooth', block:'center' });
+        // briefly flash then remove others' active
+        centersListEl.querySelectorAll('.center-card').forEach(card => {
+          if (Number(card.dataset.id) !== id) card.classList.remove('active');
+        });
+      }
+    }
+
+    // Filter centers
+    function applyFilter(type){
+      currentFilter = type || 'all';
+      // update UI buttons
+      filterButtons.forEach(btn => {
+        const t = btn.dataset.filter || 'all';
+        const active = (t === currentFilter);
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
+      });
+
+      let filtered = allCenters.slice();
+      if (currentFilter !== 'all') filtered = filtered.filter(c => c.type === currentFilter);
+      // apply search too
+      const q = (lastSearch || '').trim().toLowerCase();
+      if (q) filtered = filtered.filter(c => (c.name + ' ' + c.address + ' ' + (c.services||[]).join(' ')).toLowerCase().includes(q));
+      renderCenterList(filtered);
+      addMarkers(filtered);
+    }
+
+    // Debounced search handler
+    const onSearch = debounce((ev) => {
+      lastSearch = ev.target.value || '';
+      applyFilter(currentFilter);
+    }, 220);
+
+    // Get directions (exposed for popup buttons)
+    function getDirections(centerId){
+      const center = allCenters.find(c => c.id === centerId);
+      if (!center) return;
+      let url;
+      if (userLocation) url = `https://www.google.com/maps/dir/${userLocation.lat},${userLocation.lng}/${center.lat},${center.lng}`;
+      else url = `https://www.google.com/maps?q=${center.lat},${center.lng}`;
+      window.open(url, '_blank');
+    }
+
+    // Use geolocation and request nearby centers from backend
+    async function useMyLocation(){
+      if (!navigator.geolocation) {
+        alert('Geolocation not supported in your browser.');
+        return;
+      }
+      // UI feedback
+      useLocationBtn.disabled = true;
+      useLocationBtn.innerHTML = '<span class="loader" aria-hidden="true"></span> Locating...';
+
+      navigator.geolocation.getCurrentPosition(async (pos) => {
+        userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+
+        // Add or move user marker
+        if (userMarker) userMarker.setLatLng([userLocation.lat, userLocation.lng]);
+        else {
+          userMarker = L.circleMarker([userLocation.lat, userLocation.lng], { color: '#3B82F6', radius: 8, fillOpacity: 1 }).addTo(map);
+        }
+        map.setView([userLocation.lat, userLocation.lng], 14, { animate: true });
+
+        // Try to ask server for nearby centers (best-effort)
+        try {
+          const resp = await fetchWithTimeout(`${API_BASE}/user-location`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userLocation)
+          }, TIMEOUT_MS);
+          if (resp.ok) {
+            const json = await resp.json();
+            allCenters = Array.isArray(json.nearby_centers) ? json.nearby_centers : (json.centers || allCenters);
+            processCenters(allCenters);
+          }
+        } catch (err) {
+          console.warn('Nearby centers fetch failed:', err);
+          // keep local centers; optionally compute client-side distances in future
+        } finally {
+          useLocationBtn.disabled = false;
+          useLocationBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Use My Current Location';
+        }
+      }, (err) => {
+        console.error('Geolocation error:', err);
+        alert('Unable to read your location. Please enable location services and try again.');
+        useLocationBtn.disabled = false;
+        useLocationBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Use My Current Location';
+      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    }
+
+    // Small mock dataset if backend is unreachable
+    function mockCenters(){
+      return [
+        { id:1, name:'Hassan City Recycling Center', type:'recycling', address:'MG Road, Hassan', lat:13.0075, lng:76.1002, services:['Plastic','Paper','Glass','Metal'], hours:'8:00 - 18:00', phone:'080-xxxxxxx', rating:4.2 },
+        { id:2, name:'Community Donation Hub', type:'donation', address:'Near Town Hall, Hassan', lat:13.0048, lng:76.0956, services:['Books','Clothing','Toys'], hours:'10:00 - 17:00', phone:'080-xxxxxxx', rating:4.6 },
+        { id:3, name:'E-waste Collection Point', type:'special', address:'Industrial Area, Hassan', lat:13.0090, lng:76.1035, services:['Mobile Phones','Batteries','Electronics'], hours:'9:00 - 16:00', phone:'080-xxxxxxx', rating:4.4 },
+      ];
+    }
+
+    // Wire events
+    searchInput.addEventListener('input', onSearch);
+    filterButtons.forEach(btn => btn.addEventListener('click', () => applyFilter(btn.dataset.filter)));
+    useLocationBtn.addEventListener('click', useMyLocation);
+    // Expose directions helper for popup buttons
+    window.__ecowise = window.__ecowise || {};
+    window.__ecowise.getDirections = getDirections;
+
+    // Boot
+    document.addEventListener('DOMContentLoaded', initMap);
+
+  })();
+  </script>
+</body>
+</html>

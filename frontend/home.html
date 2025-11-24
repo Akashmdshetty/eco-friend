@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>🌱 EcoWise — AI Circular Economy Platform</title>
+
+  <!-- Fonts / Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --primary:#10B981; --primary-dark:#059669; --secondary:#3B82F6; --accent:#F59E0B;
+      --bg:#0F172A; --surface:#1E293B; --text:#F8FAFC; --muted:#94A3B8;
+      --glass:rgba(255,255,255,0.07); --glass-border:rgba(255,255,255,0.12);
+      --gradient:linear-gradient(135deg,#10B981,#3B82F6,#8B5CF6);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071023,#0f1720);color:var(--text);min-height:100vh;overflow-x:hidden}
+    a{color:inherit}
+    /* Nav */
+    .glass-nav{position:fixed;top:0;left:0;width:100%;padding:12px 0;background:var(--glass);backdrop-filter:blur(8px);border-bottom:1px solid var(--glass-border);z-index:1000}
+    .nav-container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .nav-logo{display:flex;align-items:center;gap:10px;font-weight:700}
+    .logo-icon{font-size:20px}
+    .nav-links{display:flex;gap:14px}
+    .nav-link{padding:8px 12px;border-radius:16px;text-decoration:none}
+    .nav-link.active{background:var(--primary);color:#042117}
+
+    /* hero */
+    .hero-section{padding:100px 20px 40px}
+    .hero-container{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center}
+    @media(max-width:880px){.hero-container{grid-template-columns:1fr;padding-bottom:24px}}
+    .hero-badge{display:inline-block;padding:6px 12px;border-radius:14px;background:var(--glass);border:1px solid var(--glass-border);font-size:0.9rem}
+    .hero-title{font-size:2.6rem;line-height:1.05;margin:12px 0}
+    @media(max-width:520px){.hero-title{font-size:1.8rem}}
+    .gradient-text{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .hero-description{color:var(--muted);margin-bottom:20px}
+    .hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+    .btn{padding:12px 18px;border-radius:22px;border:none;cursor:pointer;font-weight:600}
+    .btn-primary{background:var(--gradient);color:white}
+    .btn-outline{background:transparent;border:1px solid var(--glass-border);color:var(--text)}
+
+    /* === Floating cards - new CSS + absolute random placement === */
+    .cards-area {
+      position: relative;
+      width: 100%;
+      height: 320px;            /* hero area height for cards */
+      min-height: 220px;
+      overflow: visible;
+      pointer-events: none;     /* let clicks pass to underlying content; individual cards enable pointer-events */
+    }
+
+    .floating-card {
+      position: absolute;       /* JS sets top/left */
+      display: inline-block;
+      background: var(--glass);
+      border-radius: 14px;
+      padding: 14px 16px;
+      box-shadow: 0 8px 24px rgba(2,6,23,0.45);
+      transform-origin: center;
+      width: 190px;
+      border: 1px solid var(--glass-border);
+      animation: floatY 6s ease-in-out infinite;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      pointer-events: auto;     /* allow hover/clicks */
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    /* Up–down floating animation */
+    @keyframes floatY {
+      0%   { transform: translateY(0px) rotate(0deg); }
+      25%  { transform: translateY(-10px) rotate(-0.5deg); }
+      50%  { transform: translateY(0px) rotate(0deg); }
+      75%  { transform: translateY(8px) rotate(0.5deg); }
+      100% { transform: translateY(0px) rotate(0deg); }
+    }
+
+    /* Hover boost */
+    .floating-card:hover {
+      transform: translateY(-12px) scale(1.03);
+      box-shadow: 0 16px 32px rgba(2,6,23,0.6);
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      .floating-card { animation: none; transform: none; }
+      .floating-card:hover { transform: none; box-shadow: 0 8px 18px rgba(2,6,23,0.4); }
+    }
+    /* === end floating cards CSS === */
+
+    /* features */
+    .section-header{text-align:center;padding:48px 20px 6px}
+    .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;max-width:1200px;margin:0 auto;padding:0 20px 60px}
+
+    .feature-card{background:var(--glass);border-radius:14px;padding:18px;border:1px solid var(--glass-border);text-align:center}
+    .feature-icon{font-size:34px;margin-bottom:10px}
+
+    /* process */
+    .process-section{padding:30px 20px 60px}
+    .process-steps{display:flex;gap:16px;max-width:900px;margin:14px auto;align-items:center}
+    @media(max-width:880px){.process-steps{flex-direction:column}}
+
+    .step{background:var(--glass);border-radius:14px;padding:18px;text-align:center;flex:1;border:1px solid var(--glass-border)}
+
+    /* cta */
+    .cta-section{background:var(--gradient);padding:48px 20px;border-radius:14px;margin:40px auto;max-width:1100px;color:#042117;text-align:center}
+
+    /* footer */
+    footer{padding:28px 20px;color:var(--muted);text-align:center}
+
+    /* tagline selector */
+    .tagline-selector{position:fixed;right:18px;top:18px;z-index:1200}
+    .tagline-toggle{background:var(--glass);border:1px solid var(--glass-border);padding:8px 12px;border-radius:18px;cursor:pointer}
+    .tagline-options{display:none;background:var(--surface);border:1px solid var(--glass-border);padding:12px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,0.4)}
+    .tagline-options.active{display:block}
+    .tagline-option{padding:8px 10px;border-radius:10px;cursor:pointer;margin-bottom:6px}
+    .tagline-option.active{background:var(--primary);color:#042117}
+
+    /* modal */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;z-index:2000}
+    .modal.show{display:flex}
+    .modal-content{background:var(--surface);padding:18px;border-radius:12px;max-width:720px;width:92%}
+
+    /* small utils */
+    .muted{color:var(--muted)}
+    .flex{display:flex;gap:12px;align-items:center}
+  </style>
+</head>
+<body>
+  <!-- background shapes (kept minimal for perf) -->
+  <div class="animated-bg" aria-hidden="true">
+    <div class="floating-shapes" aria-hidden="true">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
+    </div>
+  </div>
+
+  <!-- tagline selector -->
+  <div class="tagline-selector" aria-hidden="false">
+    <button class="tagline-toggle" id="taglineToggle" aria-expanded="false" aria-controls="taglineOptions">🎨 Change Tagline</button>
+    <div id="taglineOptions" class="tagline-options" role="menu" aria-hidden="true">
+      <div class="tagline-option active" role="menuitem" data-index="0">Transform <span class="gradient-text">Waste</span> into <span class="gradient-text">Wealth</span></div>
+      <div class="tagline-option" role="menuitem" data-index="1">From <span class="gradient-text">Trash</span> to <span class="gradient-text">Treasure</span></div>
+      <div class="tagline-option" role="menuitem" data-index="2">Your <span class="gradient-text">Eco</span> Journey Starts <span class="gradient-text">Here</span></div>
+      <div class="tagline-option" role="menuitem" data-index="3">Reimagine Your <span class="gradient-text">Recycling</span></div>
+      <div class="tagline-option" role="menuitem" data-index="4"><span class="gradient-text">Sustainability</span> Made <span class="gradient-text">Simple</span></div>
+      <div class="tagline-option" role="menuitem" data-index="5"><span class="gradient-text">Smart</span> Recycling, <span class="gradient-text">Brighter</span> Future</div>
+    </div>
+  </div>
+
+  <!-- nav -->
+  <nav class="glass-nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-container">
+      <div class="nav-logo" aria-hidden="true"><div class="logo-icon">🌱</div><div>EcoWise</div></div>
+      <div class="nav-links" aria-hidden="true">
+        <a class="nav-link active" href="home.html">🏠 Home</a>
+        <a class="nav-link" href="analyze.html">📸 Analyze</a>
+        <a class="nav-link" href="map.html">🗺️ Map</a>
+        <a class="nav-link" href="profile.html">👤 Profile</a>
+      </div>
+      <div>
+        <button class="btn btn-outline" id="liveDemoBtn">🎬 Live Demo</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- hero -->
+  <section class="hero-section" aria-labelledby="heroTitle">
+    <div class="hero-container">
+      <div>
+        <div class="hero-badge">✨ AI-Powered Sustainability</div>
+        <h1 id="heroTitle" class="hero-title">Transform <span id="taglineMain" class="gradient-text">Waste</span> into <span id="taglineMain2" class="gradient-text">Wealth</span></h1>
+        <p class="hero-description">EcoWise uses lightweight on-device preprocessing and server-side AI to identify items and connect you to local recycling options — fast, private, and rewarding.</p>
+
+        <div class="hero-actions" role="group" aria-label="Primary actions">
+          <button class="btn btn-primary" onclick="location.href='analyze.html'">🚀 Start Analyzing</button>
+          <button class="btn btn-outline" id="learnMoreBtn">✨ Learn More</button>
+        </div>
+
+        <div style="margin-top:18px;display:flex;gap:12px;align-items:center">
+          <div class="muted">Users</div>
+          <div style="font-weight:700;color:var(--primary)" id="statUsers">0</div>
+          <div class="muted">• Centers</div>
+          <div style="font-weight:700;color:var(--primary)" id="statCenters">0</div>
+          <div class="muted">• Emissions Saved</div>
+          <div style="font-weight:700;color:var(--primary)" id="statCO2">0</div>
+        </div>
+      </div>
+
+      <!-- Cards area: JS will randomize absolute positions -->
+      <div class="cards-area" id="cardsArea" aria-hidden="true">
+        <div class="floating-card">
+          <div style="font-size:20px">📱</div>
+          <div style="font-weight:700;margin-top:6px">Mobile Phones</div>
+          <div class="muted" style="margin-top:6px">E-waste recycling</div>
+        </div>
+
+        <div class="floating-card">
+          <div style="font-size:20px">🥤</div>
+          <div style="font-weight:700;margin-top:6px">Plastic Bottle</div>
+          <div class="muted" style="margin-top:6px">Recycling bin</div>
+        </div>
+
+        <div class="floating-card">
+          <div style="font-size:20px">📚</div>
+          <div style="font-weight:700;margin-top:6px">Books</div>
+          <div class="muted" style="margin-top:6px">Donation</div>
+        </div>
+      </div> <!-- <-- closed hero-container inner column correctly here -->
+
+    </div> <!-- hero-container -->
+  </section>
+
+  <!-- features -->
+  <section id="features" class="features-section">
+    <div class="section-header">
+      <h2>Why <span class="gradient-text">EcoWise</span> Stands Out</h2>
+      <p class="muted">Instant recognition, local pickup points, and gamified rewards to keep you engaged.</p>
+    </div>
+
+    <div class="features-grid" role="list">
+      <div class="feature-card" role="listitem">
+        <div class="feature-icon">🤖</div>
+        <h3>AI-Powered Recognition</h3>
+        <p class="muted">Fast image analysis with a fallback rules engine for offline resilience.</p>
+        <div style="margin-top:12px"><span class="feature-highlight">Real-time</span></div>
+      </div>
+
+      <div class="feature-card" role="listitem">
+        <div class="feature-icon">📍</div>
+        <h3>Smart Localization</h3>
+        <p class="muted">Find nearby recycling centers with directions and contact details.</p>
+        <div style="margin-top:12px"><span class="feature-highlight">Community</span></div>
+      </div>
+
+      <div class="feature-card" role="listitem">
+        <div class="feature-icon">🏆</div>
+        <h3>Gamified Rewards</h3>
+        <p class="muted">Earn EcoPoints, climb leaderboards and redeem community rewards.</p>
+        <div style="margin-top:12px"><span class="feature-highlight">Motivation</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- process -->
+  <section class="process-section" aria-label="How it works">
+    <div class="section-header">
+      <h2>How <span class="gradient-text">EcoWise</span> Works</h2>
+      <p class="muted">Three simple steps to start reducing waste</p>
+    </div>
+
+    <div class="process-steps" role="list">
+      <div class="step" role="listitem">
+        <div style="font-size:28px">📸</div>
+        <h4>Capture</h4>
+        <p class="muted">Take a photo or upload an image of the item.</p>
+      </div>
+      <div class="step" role="listitem">
+        <div style="font-size:28px">🤖</div>
+        <h4>Analyze</h4>
+        <p class="muted">AI identifies and recommends the best disposal method.</p>
+      </div>
+      <div class="step" role="listitem">
+        <div style="font-size:28px">🎯</div>
+        <h4>Act & Earn</h4>
+        <p class="muted">Locate centers, dispose properly and gain EcoPoints.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section" aria-hidden="false">
+    <div class="cta-content">
+      <h2>Ready to make an impact?</h2>
+      <p class="muted">Start analyzing and join the EcoWise community.</p>
+      <div style="margin-top:18px">
+        <button class="btn btn-primary" onclick="location.href='analyze.html'">🚀 Start Now</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- footer -->
+  <footer>
+    <div style="max-width:1100px;margin:0 auto;padding:0 20px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <strong>EcoWise</strong>
+          <div class="muted">Making sustainability simple</div>
+        </div>
+        <div class="muted">© <span id="year"></span> EcoWise</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Demo modal -->
+  <div id="demoModal" class="modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-content">
+      <button class="close-modal" aria-label="Close demo" id="closeDemoBtn" style="float:right;border:none;background:none;color:var(--text);font-size:20px">×</button>
+      <h3>Live Demo</h3>
+      <p class="muted">This demo walks through capturing an item and viewing recommendations. (Demo placeholder)</p>
+      <div style="height:240px;border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);display:flex;align-items:center;justify-content:center;color:var(--muted)">Demo content goes here</div>
+    </div>
+  </div>
+
+<script>
+/*
+  Improved client-side JS for home.html
+  - tagline selector (defensive)
+  - demo modal (accessible)
+  - smooth scroll
+  - stats loader + animateNumber with API_BASE override
+  - robust non-overlapping random placement for floating cards
+  - resize / load handlers, exposed window.ecowisePlaceCards()
+*/
+
+const API_BASE = window.API_BASE || (window.ECOWISE && window.ECOWISE.apiBase) || 'http://localhost:5000';
+
+// ---------- Tagline / UI ----------
+const taglines = [
+  ['Waste','Wealth'],
+  ['Trash','Treasure'],
+  ['Eco','Here'],
+  ['Reimagine','Recycling'],
+  ['Sustainability','Simple'],
+  ['Smart','Brighter Future']
+];
+
+document.getElementById('year').textContent = new Date().getFullYear();
+
+(function setupTaglineUI(){
+  const toggleBtn = document.getElementById('taglineToggle');
+  const optionsBox = document.getElementById('taglineOptions');
+  if (!toggleBtn || !optionsBox) return;
+
+  toggleBtn.addEventListener('click', () => {
+    const expanded = toggleBtn.getAttribute('aria-expanded') === 'true';
+    toggleBtn.setAttribute('aria-expanded', String(!expanded));
+    optionsBox.classList.toggle('active');
+    optionsBox.setAttribute('aria-hidden', String(expanded));
+  });
+
+  const opts = document.querySelectorAll('.tagline-option');
+  opts.forEach((opt, i) => {
+    opt.addEventListener('click', () => {
+      const idx = Number(opt.dataset.index || 0) || 0;
+      const pair = taglines[idx] || taglines[0];
+      const [a,b] = pair;
+      const left = document.createElement('span'); left.className = 'gradient-text'; left.textContent = a;
+      const right = document.createElement('span'); right.className = 'gradient-text'; right.textContent = b;
+      const title = document.getElementById('heroTitle');
+      if (!title) return;
+      // rebuild title safely
+      title.textContent = '';
+      title.appendChild(document.createTextNode('Transform '));
+      title.appendChild(left);
+      title.appendChild(document.createTextNode(' into '));
+      title.appendChild(right);
+
+      opts.forEach(o => o.classList.remove('active'));
+      opt.classList.add('active');
+      optionsBox.classList.remove('active');
+      optionsBox.setAttribute('aria-hidden','true');
+      toggleBtn.setAttribute('aria-expanded','false');
+    });
+  });
+
+  // click outside closes the panel
+  document.addEventListener('click', (e) => {
+    const sel = document.querySelector('.tagline-selector');
+    if (!sel) return;
+    if (!sel.contains(e.target)) {
+      optionsBox.classList.remove('active');
+      optionsBox.setAttribute('aria-hidden','true');
+      toggleBtn.setAttribute('aria-expanded','false');
+    }
+  });
+})();
+
+// ---------- Demo modal ----------
+(function setupDemoModal(){
+  const demoBtn = document.getElementById('liveDemoBtn');
+  const demoModal = document.getElementById('demoModal');
+  const closeBtn = document.getElementById('closeDemoBtn');
+  if (!demoBtn || !demoModal || !closeBtn) return;
+  demoBtn.addEventListener('click', () => {
+    demoModal.classList.add('show');
+    demoModal.setAttribute('aria-hidden','false');
+    closeBtn.focus();
+  });
+  function closeDemo(){ demoModal.classList.remove('show'); demoModal.setAttribute('aria-hidden','true'); demoBtn.focus(); }
+  window.closeDemo = closeDemo;
+  closeBtn.addEventListener('click', closeDemo);
+  // close on esc
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && demoModal.classList.contains('show')) closeDemo(); });
+})();
+
+// ---------- Smooth scroll ----------
+function scrollToFeatures(){
+  const el = document.getElementById('features');
+  if (!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'start'});
+}
+const learnBtn = document.getElementById('learnMoreBtn'); if (learnBtn) learnBtn.addEventListener('click', scrollToFeatures);
+window.scrollToFeatures = scrollToFeatures;
+
+// ---------- Stats loader & animateNumber ----------
+async function loadStats(){
+  try{
+    const res = await fetch(API_BASE + '/stats');
+    if (!res.ok) throw new Error('no stats');
+    const d = await res.json();
+    animateNumber('statUsers', d.users || 1247);
+    animateNumber('statCenters', d.centers || 568);
+    const co2 = d.co2_saved_formatted || '2.5T';
+    if (typeof co2 === 'string') document.getElementById('statCO2').textContent = co2;
+    else animateNumber('statCO2', co2);
+  }catch(e){
+    animateNumber('statUsers', 1247);
+    animateNumber('statCenters', 568);
+    const el = document.getElementById('statCO2'); if (el) el.textContent = '2.5T';
+  }
+}
+
+function animateNumber(id, value){
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (typeof value === 'string'){ el.textContent = value; return; }
+  const start = 0;
+  const end = Number(value);
+  const duration = 900;
+  let startTime = null;
+  function step(timestamp){
+    if (!startTime) startTime = timestamp;
+    const progress = Math.min((timestamp - startTime) / duration, 1);
+    const cur = Math.floor(progress * (end - start) + start);
+    el.textContent = cur;
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// ---------- Floating cards placement (full robust script) ----------
+(function setupFloatingCards(){
+
+  const BUFFER = 40;
+  function intersectsWithBuffer(a, b, buffer = BUFFER){
+    return !(
+      a.right + buffer < b.left ||
+      a.left - buffer > b.right ||
+      a.bottom + buffer < b.top ||
+      a.top - buffer > b.bottom
+    );
+  }
+  function makeBox(left, top, w, h){ return { left, top, right: left + w, bottom: top + h, w, h }; }
+
+  function placeCards() {
+    const area = document.getElementById('cardsArea');
+    if (!area) return;
+    const cards = Array.from(area.querySelectorAll('.floating-card'));
+    if (!cards.length) return;
+    const areaRect = area.getBoundingClientRect();
+    const areaW = Math.max(areaRect.width, 1);
+    const areaH = Math.max(areaRect.height, 1);
+    const padding = 20;
+    const placed = [];
+
+    cards.forEach(c => { c.style.left = '0px'; c.style.top = '0px'; c.style.transform = 'none'; });
+
+    cards.forEach((card) => {
+      const rect = card.getBoundingClientRect();
+      const w = Math.min(rect.width || 190, Math.max(110, areaW * 0.25));
+      const h = Math.min(rect.height || 120, Math.max(70, areaH * 0.18));
+      let maxW = Math.max(10, areaW - w - padding * 2);
+      let maxH = Math.max(10, areaH - h - padding * 2);
+
+      let attempts = 0;
+      let placedBox = null;
+      while (attempts < 120 && !placedBox) {
+        const leftPx  = padding + Math.round(Math.random() * maxW);
+        const topPx   = padding + Math.round(Math.random() * maxH);
+        const candidate = makeBox(leftPx, topPx, w, h);
+        let ok = true;
+        for (const p of placed) { if (intersectsWithBuffer(candidate, p)) { ok = false; break; } }
+        if (ok) { placedBox = candidate; break; }
+        attempts++;
+      }
+
+      if (!placedBox) {
+        const offset = placed.length * 34;
+        const leftPx = Math.min(padding + offset, areaW - w - padding);
+        const topPx = Math.min(padding + offset, areaH - h - padding);
+        placedBox = makeBox(leftPx, topPx, w, h);
+      }
+
+      placed.push(placedBox);
+      const leftPct = (placedBox.left / areaW) * 100;
+      const topPct  = (placedBox.top  / areaH) * 100;
+      card.style.position = 'absolute';
+      card.style.left = leftPct.toFixed(3) + '%';
+      card.style.top  = topPct.toFixed(3) + '%';
+      const rot = (Math.random() - 0.5) * 1.4;
+      card.style.transform = `rotate(${rot}deg)`;
+      card.style.animationDuration = (5 + Math.random() * 3).toFixed(2) + 's';
+      card.style.animationDelay = (Math.random() * 1.6).toFixed(2) + 's';
+    });
+
+    window._ecowisePlacedRects = placed;
+  }
+
+  function debounce(fn, wait = 160){ let t; return function(...args){ clearTimeout(t); t = setTimeout(()=>fn(...args), wait); }; }
+  window.ecowisePlaceCards = placeCards;
+  window.addEventListener('load', () => { setTimeout(placeCards, 80); setTimeout(placeCards, 420); });
+  window.addEventListener('resize', debounce(placeCards, 140));
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) placeCards(); });
+})();
+
+// ---------- Kick stuff off ----------
+loadStats();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📸 Analyze - EcoWise</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ---------- THEME & LAYOUT ---------- */
+    :root{
+      --primary:#10B981; --primary-dark:#059669; --secondary:#3B82F6; --accent:#F59E0B;
+      --bg:#0F172A; --surface:#1E293B; --glass:rgba(255,255,255,0.07); --glass-border:rgba(255,255,255,0.12);
+      --text:#F8FAFC; --muted:#94A3B8;
+      --gradient:linear-gradient(135deg,#10B981,#3B82F6,#8B5CF6);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',system-ui,Arial;color:var(--text);background:linear-gradient(180deg,#071023,#0f1720);min-height:100vh}
+    .animated-bg{position:fixed;inset:0;z-index:-1;background:linear-gradient(135deg,#0F172A 0%,#1E293B 50%,#334155 100%)}
+    .floating-shapes .shape{position:absolute;border-radius:50%;background:var(--gradient);opacity:0.08;animation:float 6s ease-in-out infinite}
+    .shape-1{width:200px;height:200px;top:8%;left:4%}
+    .shape-2{width:150px;height:150px;bottom:8%;right:6%}
+    .shape-3{width:120px;height:120px;bottom:18%;left:18%}
+    .shape-4{width:100px;height:100px;top:30%;right:24%}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px) rotate(180deg)}}
+
+    .glass-nav{position:fixed;top:0;left:0;width:100%;padding:12px 0;background:var(--glass);backdrop-filter:blur(10px);border-bottom:1px solid var(--glass-border);z-index:100}
+    .nav-container{max-width:1200px;margin:0 auto;padding:0 20px;display:flex;align-items:center;justify-content:space-between}
+    .nav-logo{display:flex;gap:8px;align-items:center;font-weight:700}
+    .nav-links{display:flex;gap:16px}
+    .nav-link{color:var(--text);text-decoration:none;padding:8px 12px;border-radius:18px}
+    .nav-link.active{background:var(--primary);color:#fff}
+
+    main{padding:100px 20px 40px;max-width:1200px;margin:0 auto}
+    .analyze-header{text-align:center;margin-bottom:28px}
+    .section-badge{display:inline-block;background:var(--glass);padding:6px 12px;border-radius:16px;border:1px solid var(--glass-border);margin-bottom:8px}
+    .gradient-text{background:var(--gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+    .upload-options{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    @media(max-width:820px){.upload-options{grid-template-columns:1fr}}
+
+    .glass-card{background:var(--glass);border-radius:14px;padding:0;overflow:hidden;border:1px solid var(--glass-border)}
+    .option-header{padding:16px;background:rgba(255,255,255,0.03);display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--glass-border)}
+    .option-content{padding:18px}
+
+    .upload-area{border:2px dashed var(--glass-border);border-radius:12px;padding:28px;text-align:center;transition:all .18s ease;cursor:pointer;position:relative}
+    .upload-area.highlight{border-color:var(--primary);background:rgba(16,185,129,0.04)}
+    .file-input{display:none}
+    .browse-btn{background:var(--gradient);color:white;border:none;padding:10px 18px;border-radius:22px;cursor:pointer}
+    .image-preview-area{margin-top:12px;position:relative;display:inline-block}
+    #previewImage{max-width:320px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.5)}
+    .clear-btn{position:absolute;top:-10px;right:-10px;background:#ef4444;color:white;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer}
+
+    .camera-frame{position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:12px}
+    #cameraVideo{width:100%;max-width:420px;display:block}
+    .camera-controls{display:flex;gap:12px;justify-content:center}
+    .capture-btn,.cancel-btn{padding:10px 20px;border-radius:22px;border:none;cursor:pointer;font-weight:600}
+    .capture-btn{background:var(--primary);color:#042117}
+    .cancel-btn{background:transparent;color:var(--text);border:1px solid var(--glass-border)}
+
+    .analyze-action{text-align:center;margin-top:22px}
+    .analyze-btn{background:var(--gradient);color:#fff;padding:14px 28px;border-radius:28px;border:none;cursor:pointer;font-size:1.05rem}
+    .analyze-btn[disabled]{opacity:.55;cursor:not-allowed}
+
+    .results-section{margin-top:28px;display:none}
+    .results-container{background:rgba(255,255,255,0.02);padding:18px;border-radius:12px;border:1px solid var(--glass-border)}
+    .results-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .results-badge{background:var(--accent);color:#fff;padding:6px 12px;border-radius:12px}
+    .analysis-result{display:grid;grid-template-columns:1fr 360px;gap:18px}
+    @media(max-width:980px){.analysis-result{grid-template-columns:1fr}}
+
+    .item-info{background:var(--glass);padding:12px;border-radius:10px}
+    .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+    @media(max-width:680px){.stats-grid{grid-template-columns:1fr}}
+
+    .stat-card{padding:10px;border-radius:8px;background:rgba(255,255,255,0.02);text-align:center}
+    .recommendation-item{padding:10px;border-radius:8px;background:rgba(16,185,129,0.06);margin-bottom:8px}
+
+    .centers-list{margin-top:10px}
+    .center-item{padding:10px;border-radius:8px;background:var(--surface);margin-bottom:8px;border:1px solid var(--glass-border);cursor:pointer;transition:all .18s ease}
+    .center-item:hover{transform:translateX(6px);border-color:var(--primary)}
+
+    .loading-analysis{text-align:center;padding:40px}
+    .analyzing-dot{width:12px;height:12px;border-radius:50%;background:var(--primary);display:inline-block;margin:0 6px;animation:analyzing 1.4s infinite}
+    .analyzing-dot:nth-child(1){animation-delay:-0.32s}.analyzing-dot:nth-child(2){animation-delay:-0.16s}
+    @keyframes analyzing{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+    /* small accessibility helper */
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  </style>
+</head>
+<body>
+  <!-- background shapes -->
+  <div class="animated-bg" aria-hidden="true">
+    <div class="floating-shapes" aria-hidden="true">
+      <div class="shape shape-1"></div>
+      <div class="shape shape-2"></div>
+      <div class="shape shape-3"></div>
+      <div class="shape shape-4"></div>
+    </div>
+  </div>
+
+  <!-- nav -->
+  <nav class="glass-nav" aria-label="Primary">
+    <div class="nav-container">
+      <div class="nav-logo"><div class="logo-icon" aria-hidden="true">🌱</div><span>EcoWise</span></div>
+      <div class="nav-links" role="navigation" aria-label="Main links">
+        <a href="home.html" class="nav-link">🏠 Home</a>
+        <a href="analyze.html" class="nav-link active" aria-current="page">📸 Analyze</a>
+        <a href="map.html" class="nav-link">🗺️ Map</a>
+        <a href="profile.html" class="nav-link">👤 Profile</a>
+      </div>
+      <div><button onclick="location.href='home.html'" style="background:transparent;border:1px solid var(--glass-border);color:var(--text);padding:8px 12px;border-radius:12px;cursor:pointer">🏠 Back</button></div>
+    </div>
+  </nav>
+
+  <main>
+    <div class="analyze-header">
+      <div class="section-badge">🤖 AI-Powered Analysis</div>
+      <h1 class="gradient-text" style="font-size:2.1rem;margin-top:10px">Analyze Your Items</h1>
+      <p style="color:var(--muted);margin-top:8px">Upload or capture an image. We'll detect the item and show recycling options.</p>
+    </div>
+
+    <div class="upload-options">
+      <!-- Upload card -->
+      <div class="glass-card" aria-labelledby="uploadTitle">
+        <div class="option-header"><span style="font-size:18px">📁</span><h3 id="uploadTitle" style="margin-left:6px">Upload Image</h3><div style="margin-left:auto;padding:6px 10px;background:var(--gradient);color:#fff;border-radius:12px;font-weight:600">Recommended</div></div>
+        <div class="option-content">
+          <div id="fileUploadArea" class="upload-area" tabindex="0" aria-label="File upload area">
+            <input id="imageUpload" class="file-input" type="file" accept="image/*" aria-label="Choose image file">
+            <div class="upload-label">
+              <div style="font-size:40px;margin-bottom:8px;opacity:.8" aria-hidden="true">📁</div>
+              <h4>Choose an image</h4>
+              <p style="color:var(--muted)">JPG, PNG, or WebP — or drag & drop</p>
+              <div style="margin-top:12px">
+                <button class="browse-btn" id="browseBtn" type="button">Browse Files</button>
+                <span style="margin-left:12px;color:var(--muted)">or drag & drop</span>
+              </div>
+            </div>
+
+            <div id="imagePreview" class="image-preview-area" style="display:none;margin-top:12px" aria-live="polite">
+              <img id="previewImage" src="" alt="Preview image">
+              <button id="clearPreview" class="clear-btn" title="Clear preview" aria-label="Clear preview">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Camera card -->
+      <div class="glass-card" aria-labelledby="cameraTitle">
+        <div class="option-header"><span style="font-size:18px">📷</span><h3 id="cameraTitle" style="margin-left:6px">Use Camera</h3><div style="margin-left:auto;padding:6px 10px;background:var(--gradient);color:#fff;border-radius:12px;font-weight:600">Live</div></div>
+        <div class="option-content">
+          <div id="cameraArea">
+            <div id="cameraPlaceholder" style="text-align:center;padding:18px">
+              <div style="font-size:40px;margin-bottom:6px;opacity:.8" aria-hidden="true">📷</div>
+              <h4>Camera Access</h4>
+              <p style="color:var(--muted)">Click start to open your device camera</p>
+              <div style="margin-top:12px"><button id="startCameraBtn" class="browse-btn" type="button">🎥 Start Camera</button></div>
+            </div>
+
+            <div id="cameraPreview" style="display:none;text-align:center">
+              <div class="camera-frame">
+                <video id="cameraVideo" autoplay playsinline muted></video>
+              </div>
+              <div class="camera-controls">
+                <button id="captureBtn" class="capture-btn" type="button">📸 Capture</button>
+                <button id="stopCameraBtn" class="cancel-btn" type="button">❌ Stop</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analyze-action">
+      <button id="analyzeButton" class="analyze-btn" disabled type="button">🤖 Analyze with AI</button>
+      <p id="analyzeHint" style="color:var(--muted);margin-top:8px">Select or capture an image to enable analysis</p>
+    </div>
+
+    <section id="resultsSection" class="results-section" aria-live="polite" aria-atomic="true">
+      <div class="results-container">
+        <div class="results-header">
+          <h2>🎯 Analysis Results</h2>
+          <div id="resultsBadge" class="results-badge" role="status">Ready</div>
+        </div>
+        <div id="resultsContent"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    /* ---------- CONFIG ---------- */
+    // Edit this to match your backend. Use relative path (''), or a full origin: 'https://api.example.com'
+    const API_BASE = window.API_BASE || 'http://localhost:4000';
+    const MAX_UPLOAD_BYTES = 2_200_000; // ~2.2MB
+    const MAX_WIDTH = 1200; // downscale width for compression
+    const UPLOAD_TIMEOUT_MS = 60_000; // safety timeout for uploads
+
+    /* ---------- STATE ---------- */
+    let currentFile = null;
+    let cameraStream = null;
+    let previewObjectUrl = null;
+
+    /* ---------- DOM ---------- */
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const imageUpload = document.getElementById('imageUpload');
+    const browseBtn = document.getElementById('browseBtn');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewImage = document.getElementById('previewImage');
+    const clearPreview = document.getElementById('clearPreview');
+
+    const startCameraBtn = document.getElementById('startCameraBtn');
+    const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+    const cameraPreview = document.getElementById('cameraPreview');
+    const cameraVideo = document.getElementById('cameraVideo');
+    const captureBtn = document.getElementById('captureBtn');
+    const stopCameraBtn = document.getElementById('stopCameraBtn');
+
+    const analyzeButton = document.getElementById('analyzeButton');
+    const analyzeHint = document.getElementById('analyzeHint');
+
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsContent = document.getElementById('resultsContent');
+    const resultsBadge = document.getElementById('resultsBadge');
+
+    /* ---------- HELPERS ---------- */
+    function enableAnalyze(){ analyzeButton.disabled = false; analyzeHint.textContent = 'Ready — click Analyze'; }
+    function disableAnalyze(){ analyzeButton.disabled = true; analyzeHint.textContent = 'Select or capture an image to enable analysis'; }
+    function show(el){ el.style.display = ''; }
+    function hide(el){ el.style.display = 'none'; }
+    function setBadge(text, color = ''){ resultsBadge.textContent = text; resultsBadge.style.background = color || 'var(--accent)'; }
+
+    function safeRevokePreview(){
+      if (previewObjectUrl){
+        try { URL.revokeObjectURL(previewObjectUrl); } catch(e){ /* ignore */ }
+        previewObjectUrl = null;
+      }
+    }
+
+    /* ---------- IMAGE PREVIEW & CLEAR ---------- */
+    function showPreviewFromBlob(blob){
+      safeRevokePreview();
+      previewObjectUrl = URL.createObjectURL(blob);
+      previewImage.src = previewObjectUrl;
+      previewImage.alt = 'Selected image preview';
+      show(imagePreview);
+      const label = fileUploadArea.querySelector('.upload-label');
+      if (label) hide(label);
+    }
+
+    clearPreview.addEventListener('click', () => {
+      imageUpload.value = '';
+      previewImage.src = '';
+      safeRevokePreview();
+      hide(imagePreview);
+      const label = fileUploadArea.querySelector('.upload-label');
+      if (label) show(label);
+      currentFile = null;
+      disableAnalyze();
+      resultsSection.style.display = 'none';
+    });
+
+    /* ---------- FILE INPUT & DRAG/DROP ---------- */
+    browseBtn.addEventListener('click', () => imageUpload.click());
+    imageUpload.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    // drag & drop (prevent page-level drops)
+    ['dragenter','dragover','dragleave','drop'].forEach(evt => {
+      fileUploadArea.addEventListener(evt, e => e.preventDefault());
+    });
+    ['dragenter','dragover'].forEach(evt => fileUploadArea.addEventListener(evt, () => fileUploadArea.classList.add('highlight')));
+    ['dragleave','drop'].forEach(evt => fileUploadArea.addEventListener(evt, () => fileUploadArea.classList.remove('highlight')));
+
+    fileUploadArea.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (!dt) return;
+      const files = dt.files;
+      if (files && files.length) handleFiles(files);
+    });
+
+    function handleFiles(files){
+      const f = files[0];
+      if (!f) return;
+      if (!f.type || !f.type.startsWith('image/')) { alert('Please provide an image file.'); return; }
+      if (f.size > 12 * 1024 * 1024) { alert('File too large (max 12MB). Please pick a smaller file.'); return; }
+      currentFile = f;
+      showPreviewFromBlob(f);
+      enableAnalyze();
+    }
+
+    // keyboard support on upload area
+    fileUploadArea.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); imageUpload.click(); } });
+
+    /* ---------- CAMERA ---------- */
+    startCameraBtn.addEventListener('click', startCamera);
+    stopCameraBtn.addEventListener('click', stopCamera);
+    captureBtn.addEventListener('click', captureFromCamera);
+
+    async function startCamera(){
+      if (cameraStream) return;
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        alert('Camera API not supported in this browser.');
+        return;
+      }
+      try{
+        cameraStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
+        cameraVideo.srcObject = cameraStream;
+        await cameraVideo.play();
+        hide(cameraPlaceholder);
+        show(cameraPreview);
+      }catch(err){
+        console.error('camera start failed', err);
+        alert('Could not access camera. Check permissions or use file upload.');
+      }
+    }
+
+    function stopCamera(){
+      if (!cameraStream) return;
+      cameraStream.getTracks().forEach(t => { try { t.stop(); } catch(e){} });
+      cameraStream = null;
+      cameraVideo.srcObject = null;
+      hide(cameraPreview);
+      show(cameraPlaceholder);
+    }
+
+    function captureFromCamera(){
+      if (!cameraStream) { alert('Camera not started'); return; }
+      const w = cameraVideo.videoWidth || 1280;
+      const h = cameraVideo.videoHeight || 720;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(cameraVideo, 0, 0, w, h);
+      canvas.toBlob(async (blob) => {
+        if (!blob) { alert('Capture failed'); return; }
+        const file = new File([blob], `capture_${Date.now()}.jpg`, {type:'image/jpeg'});
+        currentFile = file;
+        showPreviewFromBlob(file);
+        enableAnalyze();
+        stopCamera();
+      }, 'image/jpeg', 0.9);
+    }
+
+    /* ---------- CLIENT-SIDE COMPRESSION ---------- */
+    async function compressImage(file, maxBytes = MAX_UPLOAD_BYTES, maxW = MAX_WIDTH){
+      // create image bitmap (works for File/Blob)
+      const imageBitmap = await createImageBitmap(file);
+      let w = imageBitmap.width;
+      let h = imageBitmap.height;
+      if (w > maxW){
+        h = Math.round(h * (maxW / w));
+        w = maxW;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(imageBitmap, 0, 0, w, h);
+
+      let quality = 0.9;
+      let blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+      // reduce quality gradually
+      while (blob && blob.size > maxBytes && quality > 0.35){
+        quality -= 0.07;
+        blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+      }
+      // ensure we return a Blob (may be null in older browsers)
+      return blob || file;
+    }
+
+    /* ---------- UPLOAD WITH PROGRESS (XHR) ---------- */
+    function uploadFileWithProgress(blob, filename, onProgress){
+      return new Promise((resolve, reject) => {
+        const fd = new FormData();
+        // ensure the blob has a type
+        const toSend = (blob instanceof File) ? blob : new File([blob], filename, {type: blob.type || 'image/jpeg'});
+        fd.append('image', toSend, toSend.name);
+        // demo username; adapt as needed
+        fd.append('username', 'EcoStudent');
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `${API_BASE}/detect`, true);
+        xhr.responseType = 'json';
+
+        const abortTimer = setTimeout(() => {
+          xhr.abort();
+          reject(new Error('Upload timeout'));
+        }, UPLOAD_TIMEOUT_MS);
+
+        xhr.upload.onprogress = (e) => { if (e.lengthComputable && typeof onProgress === 'function') onProgress(e.loaded / e.total); };
+        xhr.onload = () => {
+          clearTimeout(abortTimer);
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(xhr.response);
+          } else {
+            const msg = xhr.response && xhr.response.message ? xhr.response.message : `${xhr.status} ${xhr.statusText}`;
+            reject(new Error('Upload failed: ' + msg));
+          }
+        };
+        xhr.onerror = () => { clearTimeout(abortTimer); reject(new Error('Network error during upload')); };
+        try { xhr.send(fd); } catch (e) { clearTimeout(abortTimer); reject(e); }
+      });
+    }
+
+    /* ---------- MAIN ANALYZE FLOW ---------- */
+    analyzeButton.addEventListener('click', async () => {
+      if (!currentFile) { alert('Select or capture image first'); return; }
+      // UI
+      analyzeButton.disabled = true;
+      analyzeButton.textContent = '⏳ Analyzing...';
+      resultsSection.style.display = '';
+      setBadge('Analyzing...', 'var(--accent)');
+      resultsContent.innerHTML = `<div class="loading-analysis"><div><span class="analyzing-dot"></span><span class="analyzing-dot"></span><span class="analyzing-dot"></span></div><p style="color:var(--muted);margin-top:12px">Identifying objects and matching recycling instructions...</p></div>`;
+
+      try{
+        // compress before upload
+        const compressedBlob = await compressImage(currentFile);
+        // pick safe filename (preserve extension if present)
+        const origName = currentFile && currentFile.name ? currentFile.name : `upload_${Date.now()}.jpg`;
+        const extMatch = origName.match(/\.[0-9a-z]+$/i);
+        const ext = extMatch ? extMatch[0] : '.jpg';
+        const uploadName = `ecowise_${Date.now()}${ext}`;
+
+        // show progress bar
+        const progressContainer = document.createElement('div');
+        progressContainer.style.margin = '12px 0';
+        const progressEl = document.createElement('progress');
+        progressEl.max = 1; progressEl.value = 0; progressEl.style.width = '100%';
+        progressContainer.appendChild(progressEl);
+        resultsContent.appendChild(progressContainer);
+
+        console.log('[analyze] uploading to', `${API_BASE}/detect`, { filename: uploadName, size: compressedBlob.size || compressedBlob.byteLength });
+
+        const res = await uploadFileWithProgress(compressedBlob, uploadName, (fraction) => {
+          progressEl.value = fraction;
+        });
+
+        console.log('[analyze] server response:', res);
+
+        // Normalize response
+        const data = res && typeof res === 'object' ? res : {};
+        data.detected_objects = data.detected_objects || data.detected || data.items || data.objects || data.results || [];
+
+        renderResults(data);
+      }catch(err){
+        console.error('Analyze error:', err);
+        // Show friendly message then fallback mock
+        resultsContent.innerHTML = `<div style="padding:20px;color:var(--muted)">Server error: ${err.message || 'unknown'}. Showing a sample result.</div>`;
+        // small delay so user sees message
+        setTimeout(() => showMockResult(), 600);
+      }finally{
+        analyzeButton.disabled = false;
+        analyzeButton.textContent = '🤖 Analyze with AI';
+      }
+    });
+
+    /* ---------- RENDER RESULTS (safe DOM APIs) ---------- */
+    function renderResults(data){
+      setBadge('Analysis Complete', 'var(--primary)');
+      resultsContent.innerHTML = '';
+
+      const detected = Array.isArray(data.detected_objects) ? data.detected_objects : [];
+      if (!detected.length){
+        resultsContent.innerHTML = `<div style="padding:28px;text-align:center"><h3>No items detected</h3><p style="color:var(--muted)">Try a clearer photo or different angle.</p><div style="margin-top:12px"><button class="analyze-btn" onclick="location.reload()">Try Again</button></div></div>`;
+        return;
+      }
+
+      const primary = detected[0];
+      const name = primary.name || primary.label || primary.type || primary.item || primary.class || 'item';
+      const points = primary.points || primary.score || Math.round((primary.confidence || primary.probability || 0) * 100) || primary.eco_points || 0;
+      const carbon = primary.carbon_saved_kg || primary.carbon || (data.carbon_saved_kg || 0);
+
+      const details = getItemDetails(String(name).toLowerCase());
+
+      // left column
+      const left = document.createElement('div');
+      left.className = 'item-info';
+      left.innerHTML = `
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">
+          <div style="width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--gradient);font-size:28px">${details.icon}</div>
+          <div>
+            <h3 style="margin:0">${escapeHtml(details.name)}</h3>
+            <div style="color:var(--primary);font-weight:600">${escapeHtml(details.category)}</div>
+          </div>
+        </div>
+        <div style="color:var(--muted);line-height:1.5">${escapeHtml(details.description)}</div>
+
+        <div style="margin-top:12px;padding:10px;border-radius:8px;background:rgba(16,185,129,0.06);border-left:4px solid var(--primary)">
+          <strong>${escapeHtml(details.action)}</strong> — ${escapeHtml(details.actionDescription)}
+        </div>
+
+        <div class="stats-grid" style="margin-top:14px">
+          <div class="stat-card"><div style="font-weight:700;color:var(--primary);font-size:1.2rem">+${escapeHtml(String(points))}</div><div style="color:var(--muted);font-size:0.85rem">EcoPoints</div></div>
+          <div class="stat-card"><div style="font-weight:700;color:var(--primary);font-size:1.2rem">${escapeHtml(String(carbon))}kg</div><div style="color:var(--muted);font-size:0.85rem">Carbon Saved</div></div>
+          <div class="stat-card"><div style="font-weight:700;color:var(--primary);font-size:1.2rem">${escapeHtml(details.processingTime)}</div><div style="color:var(--muted);font-size:0.85rem">Processing Time</div></div>
+        </div>
+
+        <div style="margin-top:12px"><h4 style="margin:8px 0">📋 Tips</h4></div>
+      `;
+
+      // add tips safely
+      const tipsContainer = document.createElement('div');
+      details.tips.forEach(t => {
+        const d = document.createElement('div');
+        d.className = 'recommendation-item';
+        d.textContent = t;
+        tipsContainer.appendChild(d);
+      });
+      left.appendChild(tipsContainer);
+
+      // right column (centers)
+      const right = document.createElement('div');
+      const centersSection = document.createElement('div');
+      const centersTitle = document.createElement('h4');
+      centersTitle.textContent = '📍 Nearby Recycling Centers';
+      centersSection.appendChild(centersTitle);
+      const centersList = document.createElement('div');
+      centersList.id = 'centersList';
+      centersList.className = 'centers-list';
+      centersList.style.marginTop = '10px';
+      centersSection.appendChild(centersList);
+
+      const actionsRow = document.createElement('div');
+      actionsRow.style.marginTop = '12px';
+      actionsRow.style.display = 'flex';
+      actionsRow.style.gap = '8px';
+
+      const viewMapBtn = document.createElement('button');
+      viewMapBtn.className = 'analyze-btn';
+      viewMapBtn.type = 'button';
+      viewMapBtn.textContent = '🗺️ View All Centers';
+      viewMapBtn.addEventListener('click', () => location.href = 'map.html');
+
+      const anotherBtn = document.createElement('button');
+      anotherBtn.className = 'browse-btn';
+      anotherBtn.type = 'button';
+      anotherBtn.style.background = 'transparent';
+      anotherBtn.addEventListener('click', analyzeAnother);
+      anotherBtn.textContent = '🔄 Analyze Another';
+
+      actionsRow.appendChild(viewMapBtn);
+      actionsRow.appendChild(anotherBtn);
+      centersSection.appendChild(actionsRow);
+
+      right.appendChild(centersSection);
+
+      // assemble
+      const container = document.createElement('div');
+      container.className = 'analysis-result';
+      container.appendChild(left);
+      container.appendChild(right);
+      resultsContent.appendChild(container);
+
+      // fetch centers and show up to 3 (safe DOM creation)
+      fetch(`${API_BASE}/recycling-centers`).then(r => {
+        if (!r.ok) throw new Error('centers fetch failed ' + r.status);
+        return r.json();
+      }).then(json => {
+        const centers = Array.isArray(json.centers) ? json.centers : (Array.isArray(json) ? json : []);
+        const picked = [];
+        // prefer centers that match mapping ids
+        if (Array.isArray(details.centers) && details.centers.length && centers.length){
+          details.centers.forEach(id => {
+            const found = centers.find(c => String(c.id) === String(id));
+            if (found) picked.push(found);
+          });
+        }
+        // fallback first ones
+        const finalPick = picked.length ? picked.slice(0,3) : centers.slice(0,3);
+        if (!finalPick.length){
+          const msg = document.createElement('div');
+          msg.className = 'no-centers';
+          msg.textContent = 'No centers available right now.';
+          centersList.appendChild(msg);
+          return;
+        }
+        finalPick.forEach(c => {
+          const ce = document.createElement('div');
+          ce.className = 'center-item';
+          ce.tabIndex = 0;
+          ce.style.cursor = 'pointer';
+          ce.addEventListener('click', () => openCenter(c.id));
+          ce.addEventListener('keydown', (e) => { if (e.key === 'Enter') openCenter(c.id); });
+
+          const nameEl = document.createElement('div');
+          nameEl.style.fontWeight = '600';
+          nameEl.textContent = c.name || 'Center';
+
+          const linkEl = document.createElement('div');
+          linkEl.style.color = 'var(--primary)';
+          linkEl.style.fontSize = '0.85rem';
+          linkEl.textContent = (c.lat && c.lng) ? 'Open in Maps' : 'Contact for details';
+
+          const addrEl = document.createElement('div');
+          addrEl.style.color = 'var(--muted)';
+          addrEl.style.fontSize = '0.85rem';
+          addrEl.style.marginTop = '6px';
+          addrEl.textContent = c.address || '';
+
+          ce.appendChild(nameEl);
+          ce.appendChild(linkEl);
+          ce.appendChild(addrEl);
+          centersList.appendChild(ce);
+        });
+      }).catch(e => {
+        console.warn('centers fetch failed', e);
+        const msg = document.createElement('div');
+        msg.className = 'no-centers';
+        msg.textContent = "Couldn't load centers. Try again later.";
+        centersList.appendChild(msg);
+      });
+    }
+
+    // open center and navigate to map (store selection)
+    window.openCenter = function(id){
+      try { localStorage.setItem('selectedCenter', String(id)); } catch(e){ console.warn('localStorage unavailable', e); }
+      location.href = 'map.html';
+    };
+
+    // analyze another
+    function analyzeAnother(){
+      imageUpload.value = '';
+      previewImage.src = '';
+      safeRevokePreview();
+      hide(imagePreview);
+      const label = fileUploadArea.querySelector('.upload-label');
+      if (label) show(label);
+      currentFile = null;
+      disableAnalyze();
+      resultsSection.style.display = 'none';
+    }
+
+    // fallback mock result
+    function showMockResult(){
+      const mock = {
+        detected_objects: [{ name:'bottle', points:10 }],
+        carbon_saved_kg: 0.5,
+        recommendations: ['Recycle the bottle at nearest center']
+      };
+      renderResults(mock);
+    }
+
+    // local mapping of items
+    function getItemDetails(itemName){
+      const db = {
+        bottle:{name:'Plastic Bottle',category:'Recyclable Plastic',icon:'🥤',points:10,carbonSaved:0.5,processingTime:'2.1s',action:'Recycle',actionDescription:'Place in plastic recycling bin',description:'Plastic bottles are widely recyclable and can be turned into new products.',tips:['Rinse the bottle','Remove the cap','Flatten to save space'],centers:[1,2,5]},
+        book:{name:'Books',category:'Donation/Reuse',icon:'📚',points:15,carbonSaved:0.8,processingTime:'1.8s',action:'Donate',actionDescription:'Give to libraries or community centers',description:'Books can be reused or donated.',tips:['Check condition','Contact local libraries'],centers:[8]},
+        phone:{name:'Mobile Phone',category:'E-waste',icon:'📱',points:25,carbonSaved:2.0,processingTime:'2.5s',action:'Resell/Recycle',actionDescription:'Sell or recycle properly',description:'Contains valuable metals',tips:['Wipe data','Remove SIM'],centers:[3]},
+        clothing:{name:'Clothing',category:'Donation/Reuse',icon:'👕',points:12,carbonSaved:1.2,processingTime:'1.9s',action:'Donate',actionDescription:'Give to charity or thrift stores',description:'Donate wearable clothing.',tips:['Wash before donating'],centers:[7]},
+        can:{name:'Metal Can',category:'Recyclable Metal',icon:'🥫',points:10,carbonSaved:0.6,processingTime:'1.7s',action:'Recycle',actionDescription:'Place in metal recycling bin',description:'Metal cans are highly recyclable.',tips:['Rinse thoroughly','Crush to save space'],centers:[1,6]},
+        glass:{name:'Glass Bottle',category:'Recyclable Glass',icon:'🍶',points:12,carbonSaved:0.4,processingTime:'2.0s',action:'Recycle',actionDescription:'Place in glass recycling bin',description:'Glass is 100% recyclable.',tips:['Rinse','Remove lids'],centers:[1,5]},
+        phonecharger:{name:'Phone Charger',category:'E-waste',icon:'🔌',points:8,carbonSaved:0.3,processingTime:'1.6s',action:'Recycle',actionDescription:'Collect with e-waste',description:'Small electronics should be recycled.',tips:['Bundle with device'],centers:[3]},
+        item:{name:'General Item',category:'Check Guidelines',icon:'📦',points:5,carbonSaved:0.2,processingTime:'1.5s',action:'Check Guidelines',actionDescription:'Consult local recycling rules',description:'Check with local authorities.',tips:['Check guidelines','Visit map'],centers:[1]}
+      };
+      const key = (itemName || '').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,32);
+      return db[key] || db['item'];
+    }
+
+    // small escape for inline HTML inserted from local strings
+    function escapeHtml(s = ''){
+      return String(s).replace(/[&<>"'`=\/]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;','/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[c]));
+    }
+
+    /* ---------- READY ---------- */
+    disableAnalyze();
+
+    // expose debug helpers
+    window.ecowiseDebug = { API_BASE, showMockResult, safeRevokePreview };
+
+    console.log('[analyze.html] initialized. API_BASE =', API_BASE);
+  </script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>EcoWise — Dashboard</title>
+  <style>
+    :root{
+      --bg:#071023; --card:#0b1220; --accent:#10B981; --muted:#94a3b8; --glass:rgba(255,255,255,0.03);
+      --white:#E6EEF8;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Arial;background:linear-gradient(180deg,#071023,#0f1720);color:var(--white);min-height:100vh}
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:44px;height:44px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#042117}
+    h1{font-size:1.25rem;margin:0}
+    .actions{display:flex;gap:8px;align-items:center}
+    button{background:transparent;border:1px solid var(--glass);color:var(--white);padding:8px 12px;border-radius:8px;cursor:pointer}
+    .card{background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--glass);box-shadow:0 8px 24px rgba(2,6,23,0.6)}
+    .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+    @media(max-width:860px){.grid{grid-template-columns:1fr}}
+    .stats{display:flex;gap:12px;flex-wrap:wrap}
+    .stat{flex:1;min-width:140px;background:var(--glass);padding:12px;border-radius:10px;text-align:center}
+    .stat .value{font-size:1.2rem;color:var(--accent);font-weight:700}
+    .leaderboard{max-height:360px;overflow:auto;margin-top:12px}
+    ol{padding-left:18px;margin:0}
+    .quiet{color:var(--muted);font-size:0.95rem}
+    .small{font-size:0.9rem;color:var(--muted)}
+    .center{display:flex;align-items:center;gap:10px}
+    a.link{color:var(--accent);text-decoration:none}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    .controls{display:flex;gap:8px}
+    /* small inline auth UI styles */
+    .auth-links a { margin-left:10px; text-decoration:none; color:var(--accent); }
+    /* focus outlines for keyboard users */
+    a:focus, button:focus { outline: 3px solid rgba(16,185,129,0.12); outline-offset:2px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo">🌱</div>
+        <div>
+          <h1>EcoWise Dashboard</h1>
+          <!-- This line will be updated by auth.js -->
+          <div class="small quiet" id="welcomeLine">Checking status…</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <div class="toolbar">
+          <button id="goAnalyze">Analyze</button>
+          <button id="goMap">Map</button>
+        </div>
+        <div class="controls">
+          <!-- Sign in / Register appear for guests; logout appears when logged in.
+               auth.js will toggle their visibility. -->
+          <div class="auth-links" id="authLinks">
+            <a id="signInLink" href="login.html">Sign in</a>
+            <a id="registerLink" href="register.html">Register</a>
+          </div>
+          <button id="logoutBtn" style="display:none">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <!-- Left: User / Activity -->
+      <section class="card" id="userCard">
+        <h3>Your Summary</h3>
+        <div id="userContent" style="margin-top:12px">
+          <div class="quiet">Loading user data…</div>
+        </div>
+
+        <div style="margin-top:14px">
+          <h4 class="small quiet" style="margin-bottom:8px">Recent activity</h4>
+          <div id="recentHistory" class="small quiet">Loading…</div>
+        </div>
+      </section>
+
+      <!-- Right: Leaderboard -->
+      <aside class="card" id="leaderCard">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h3 style="margin:0">Leaderboard</h3>
+          <div class="small quiet">Top contributors</div>
+        </div>
+
+        <div class="leaderboard" id="leaderboardList" style="margin-top:12px">
+          <div class="small quiet">Loading leaderboard…</div>
+        </div>
+
+        <div style="margin-top:12px;text-align:right">
+          <a class="link" href="home.html">Back to home</a>
+        </div>
+      </aside>
+    </main>
+
+    <footer style="margin-top:18px;text-align:center;color:var(--muted);font-size:0.9rem">
+      EcoWise • Track your recycling impact
+    </footer>
+  </div>
+
+  <!-- load auth helper (must be in same folder as this HTML: frontend/auth.js) -->
+  <script src="auth.js"></script>
+
+  <!-- improved inline script: defensive + backwards-compatible with old localStorage keys -->
+  <script>
+  (function(){
+    // Prefer window.ECOWISE.apiBase (set by auth.js or page). Fall back to the old host.
+    const API_BASE = (window.ECOWISE && window.ECOWISE.apiBase) || 'http://localhost:4000/api';
+
+    // Token/username compatibility: read both old keys and new namespaced keys.
+    function getToken(){
+      // new namespaced key used by improved auth.js
+      const fromGlobal = window.ECOWISE && window.ECOWISE.token;
+      if (fromGlobal) return fromGlobal;
+      // fallback to legacy key for older installs
+      return localStorage.getItem('ecowise_token') || localStorage.getItem('ecowise.token') || null;
+    }
+    function getUsername(){
+      const fromGlobal = window.ECOWISE && window.ECOWISE.username;
+      if (fromGlobal) return fromGlobal;
+      return localStorage.getItem('ecowise_username') || localStorage.getItem('ecowise.username') || null;
+    }
+
+    // DOM refs (defensive)
+    const welcomeLine = document.getElementById('welcomeLine');
+    const userContent = document.getElementById('userContent');
+    const recentHistory = document.getElementById('recentHistory');
+    const leaderboardList = document.getElementById('leaderboardList');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const goAnalyze = document.getElementById('goAnalyze');
+    const goMap = document.getElementById('goMap');
+    const signInLink = document.getElementById('signInLink');
+    const registerLink = document.getElementById('registerLink');
+    const authLinks = document.getElementById('authLinks');
+
+    // navigation
+    if (goAnalyze) goAnalyze.addEventListener('click', ()=> location.href = 'analyze.html');
+    if (goMap) goMap.addEventListener('click', ()=> location.href = 'map.html');
+
+    if (logoutBtn) logoutBtn.addEventListener('click', () => {
+      // clear both old and new keys
+      try {
+        localStorage.removeItem('ecowise_username');
+        localStorage.removeItem('ecowise_token');
+        localStorage.removeItem('ecowise.username');
+        localStorage.removeItem('ecowise.token');
+      } catch(e) { console.warn('Could not clear storage', e); }
+      if (window.ECOWISE) { window.ECOWISE.token = null; window.ECOWISE.username = null; window.ECOWISE.isAuthenticated = false; }
+      // redirect to login so the user sees the change
+      window.location.href = 'login.html';
+    });
+
+    async function apiGet(path){
+      const token = getToken();
+      const headers = {};
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      const res = await fetch(API_BASE + path, { headers });
+      if (!res.ok) throw new Error('API ' + res.status);
+      return res.json();
+    }
+
+    async function loadLeaderboard(){
+      if (!leaderboardList) return;
+      try {
+        const data = await apiGet('/leaderboard');
+        const arr = Array.isArray(data.leaderboard) ? data.leaderboard : (Array.isArray(data) ? data : []);
+        if (!arr.length){
+          leaderboardList.innerHTML = '<div class="small quiet">No leaderboard data yet.</div>';
+          return;
+        }
+        const ol = document.createElement('ol');
+        arr.forEach((u) => {
+          const li = document.createElement('li');
+          li.style.padding = '8px 0';
+          li.style.borderBottom = '1px solid rgba(255,255,255,0.02)';
+          li.innerHTML = `<strong>${escapeHtml(u.username)}</strong> — <span style="color:var(--accent)">${Number(u.eco_points||0)} pts</span> <div class="small quiet">${Number(u.items_recycled||0)} items</div>`;
+          ol.appendChild(li);
+        });
+        leaderboardList.innerHTML = '';
+        leaderboardList.appendChild(ol);
+      } catch (err) {
+        leaderboardList.innerHTML = '<div class="small quiet">Leaderboard unavailable.</div>';
+        console.debug('Leaderboard fetch failed (expected on minimal backend):', err);
+      }
+    }
+
+    async function loadUser(){
+      const username = getUsername();
+      const token = getToken();
+
+      // guest path
+      if (!token) {
+        if (welcomeLine) welcomeLine.textContent = 'Signed in as Guest — analyze to create an account';
+        if (userContent) userContent.innerHTML = `<div class="small quiet">You are browsing as a guest. <a href="login.html" class="link">Sign in</a> to track progress.</div>`;
+        if (recentHistory) recentHistory.innerHTML = `<div class="small quiet">No history available for guest.</div>`;
+        if (authLinks) authLinks.style.display = '';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+        return;
+      }
+
+      // token exists — try /me, else fallback to stored username
+      try {
+        const me = await apiGet('/me');
+        const user = me && me.user ? me.user : null;
+        if (!user || !user.username) {
+          const fallbackName = username || 'User';
+          if (welcomeLine) welcomeLine.textContent = 'Welcome back, ' + fallbackName;
+          if (authLinks) authLinks.style.display = 'none';
+          if (logoutBtn) logoutBtn.style.display = '';
+          if (userContent) userContent.innerHTML = `<div class="small quiet">Logged in as <strong>${escapeHtml(fallbackName)}</strong>. Detailed profile endpoints are not available.</div>`;
+          if (recentHistory) recentHistory.innerHTML = `<div class="small quiet">No history available.</div>`;
+          return;
+        }
+
+        if (welcomeLine) welcomeLine.textContent = 'Welcome back, ' + user.username;
+        if (authLinks) authLinks.style.display = 'none';
+        if (logoutBtn) logoutBtn.style.display = '';
+
+        if (userContent) {
+          userContent.innerHTML = `
+            <div style="display:flex;gap:12px;align-items:center">
+              <div style="width:72px;height:72px;border-radius:12px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;color:#042117">${escapeHtml((user.username||'U').charAt(0).toUpperCase())}</div>
+              <div>
+                <div style="font-weight:700">${escapeHtml(user.username)}</div>
+                ${user.created_at ? `<div class="small quiet">Joined: ${new Date(user.created_at).toLocaleDateString()}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }
+
+        // try to fetch history (best-effort)
+        if (recentHistory) {
+          try {
+            const hist = await apiGet('/user/' + encodeURIComponent(user.username) + '/history');
+            const rows = Array.isArray(hist.history) ? hist.history : (Array.isArray(hist) ? hist : []);
+            if (!rows.length) {
+              recentHistory.innerHTML = '<div class="small quiet">No recent activity.</div>';
+            } else {
+              const ul = document.createElement('ul'); ul.style.listStyle='none'; ul.style.padding='0';
+              rows.slice(0,6).forEach(h => {
+                const li = document.createElement('li');
+                li.style.padding = '8px 0';
+                li.style.borderBottom = '1px solid rgba(255,255,255,0.02)';
+                li.innerHTML = `<div style="font-weight:600">${escapeHtml(h.filename || 'file')}</div><div class="small quiet">${h.processed_at ? new Date(h.processed_at).toLocaleString() : ''} • +${Number(h.eco_points_earned || 0)} pts</div>`;
+                ul.appendChild(li);
+              });
+              recentHistory.innerHTML = '';
+              recentHistory.appendChild(ul);
+            }
+          } catch (errHist) {
+            recentHistory.innerHTML = '<div class="small quiet">No recent activity (history endpoint not available).</div>';
+          }
+        }
+
+      } catch (err) {
+        console.error('Failed to fetch /me:', err);
+        if (welcomeLine) welcomeLine.textContent = 'Signed in as Guest — analyze to create an account';
+        if (userContent) userContent.innerHTML = `<div class="small quiet">Could not load user data. Try refreshing or check your network.</div>`;
+        if (recentHistory) recentHistory.innerHTML = `<div class="small quiet">Unable to fetch history.</div>`;
+        if (authLinks) authLinks.style.display = '';
+        if (logoutBtn) logoutBtn.style.display = 'none';
+      }
+    }
+
+    // simple html-escape for inserted text (tiny and safe)
+    function escapeHtml(s=''){ return String(s || '').replace(/[&<>"'`=\/]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;",'/':'&#x2F;','`':'&#x60;','=':'&#x3D;'}[c])); }
+
+    // boot
+    loadLeaderboard().catch(()=>{});
+    loadUser().catch(()=>{});
+    // refresh leaderboard occasionally
+    setInterval(() => loadLeaderboard().catch(()=>{}), 60_000);
+  })();
+  </script>
+
+</body>
+</html>

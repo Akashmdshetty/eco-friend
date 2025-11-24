@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin — EcoWise</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg:#f6f9fb; --card:#fff; --muted:#64748b; --accent:#2b6cb0; --text:#0b1220;
+      --radius:8px; --pad:10px;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body{
+      background:var(--bg);
+      color:var(--text);
+      max-width:1100px;
+      margin:28px auto;
+      padding:16px;
+    }
+    .top { display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap; }
+    h1{margin:0 0 6px 0;font-size:20px}
+    .controls{display:flex;gap:8px;align-items:center;margin:8px 0 14px 0;flex-wrap:wrap}
+    .field{display:flex;gap:8px;align-items:center}
+    input[type="text"], input[type="search"]{
+      padding:8px;border-radius:6px;border:1px solid #cbd5e1; min-height:36px;
+    }
+    button{
+      padding:8px 12px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;
+      min-height:36px;
+    }
+    button[disabled]{opacity:0.6;cursor:default}
+    button.ghost{background:transparent;border:1px solid #cbd5e1;color:var(--text)}
+    table{width:100%;border-collapse:collapse;margin-top:12px;background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:0 6px 18px rgba(11,17,34,0.06)}
+    caption{caption-side:top;text-align:left;padding:8px 12px;color:var(--muted)}
+    th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left;vertical-align:middle}
+    th{background:#f1f5f9;font-weight:700}
+    td small{color:var(--muted)}
+    .note{color:#475569;margin-top:8px}
+    .link{color:var(--accent);text-decoration:none;cursor:pointer}
+    pre{background:#0b1220;color:#e6eef8;padding:12px;border-radius:6px;overflow:auto}
+    #details{margin-top:14px}
+    .muted{color:var(--muted)}
+    .loading{opacity:0.9;font-style:italic}
+    .nowrap{white-space:nowrap}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    tr:focus-within { outline: 2px solid rgba(43,108,176,0.15); }
+    a:focus, button:focus, input:focus { outline: 3px solid rgba(43,108,176,0.18); outline-offset:2px; }
+    @media (max-width:640px){
+      .controls{flex-direction:column;align-items:stretch}
+      input[type="text"]{width:100%}
+      .field{width:100%}
+    }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div>
+      <h1>EcoWise — Admin</h1>
+      <div class="note">Tip: avoid pasting secrets in shared devices. You can prefill via URL param <code>?admin_secret=...</code> for convenience on private machines.</div>
+    </div>
+  </div>
+
+  <div class="controls" role="region" aria-label="Admin controls">
+    <label class="field" title="Paste admin secret">
+      <span class="muted">Admin secret:</span>
+      <input id="adminSecret" type="text" placeholder="paste admin_secret here" style="width:360px" aria-label="admin secret" />
+    </label>
+
+    <label class="field">
+      <span class="muted">Search users:</span>
+      <input id="search" type="search" placeholder="username, email, or id" aria-label="search users" />
+    </label>
+
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="btnSearch" title="Search users (limit 200)">Search</button>
+      <button id="btnRefresh" class="ghost" title="Reload users">Refresh</button>
+      <button id="btnExport" title="Export users as CSV (will use header auth)">Export CSV</button>
+    </div>
+  </div>
+
+  <table id="usersTable" aria-describedby="tableDesc">
+    <caption id="tableDesc">Users list (max 200)</caption>
+    <thead>
+      <tr><th class="nowrap">ID</th><th>Username</th><th>Created</th><th>Actions</th></tr>
+    </thead>
+    <tbody><tr><td colspan="4" class="loading">No request made yet. Click Search or Refresh.</td></tr></tbody>
+  </table>
+
+  <div id="details" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+(function(){
+  // Lightweight helpers
+  const $ = s => document.querySelector(s);
+  const tbody = $('#usersTable tbody');
+  const adminSecretInput = $('#adminSecret');
+  const searchInput = $('#search');
+  const btnSearch = $('#btnSearch');
+  const btnRefresh = $('#btnRefresh');
+  const btnExport = $('#btnExport');
+  const detailsEl = $('#details');
+  const urlParams = new URLSearchParams(location.search);
+
+  // Prefill secret if present in URL (explicit opt-in by user)
+  if (urlParams.get('admin_secret')) adminSecretInput.value = urlParams.get('admin_secret');
+
+  const API_ROOT = ''; // backend serves /admin/...
+
+  /* Minimal escaping for insertion into textContent */
+  function escapeString(s='') {
+    return (s === null || s === undefined) ? '' : String(s);
+  }
+
+  function makeHeaders(extraHeaders){
+    const headers = {'Content-Type':'application/json', ...extraHeaders};
+    const secret = adminSecretInput.value && adminSecretInput.value.trim();
+    if (secret) headers['x-admin-secret'] = secret;
+    return headers;
+  }
+
+  async function adminFetch(path, opts = {}) {
+    const method = (opts.method || 'GET').toUpperCase();
+    const useQuery = !!opts.useQuery; // explicit opt-in
+    const secret = adminSecretInput.value && adminSecretInput.value.trim();
+
+    // Build URL (do NOT append secret unless explicitly requested)
+    const url = API_ROOT + path + (useQuery && secret ? ('?admin_secret=' + encodeURIComponent(secret)) : '');
+
+    const controller = new AbortController();
+    const timeoutMs = opts.timeout || 20000; // 20s default
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: makeHeaders(opts.headers),
+        body: opts.body,
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      return res;
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
+  }
+
+  // Small UX helpers to disable action buttons while a request runs
+  function setBusy(v = true) {
+    [btnSearch, btnRefresh, btnExport].forEach(b => b.disabled = v);
+  }
+
+  // Render helpers that avoid innerHTML where possible
+  function renderUsers(users) {
+    tbody.innerHTML = '';
+    if (!users || !users.length) {
+      const tr = document.createElement('tr');
+      const td = document.createElement('td');
+      td.colSpan = 4;
+      td.className = 'loading';
+      td.textContent = 'No users found.';
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+
+    users.forEach(u => {
+      const tr = document.createElement('tr');
+
+      // ID
+      const tdId = document.createElement('td');
+      tdId.className = 'nowrap';
+      tdId.textContent = escapeString(u.id);
+      tr.appendChild(tdId);
+
+      // Username (link to view)
+      const tdUser = document.createElement('td');
+      const a = document.createElement('a');
+      a.href = '#';
+      a.className = 'viewUser link';
+      a.dataset.id = String(u.id || '');
+      a.textContent = escapeString(u.username || '(no username)');
+      a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        viewUser(a.dataset.id);
+      });
+      tdUser.appendChild(a);
+      tr.appendChild(tdUser);
+
+      // Created
+      const tdCreated = document.createElement('td');
+      const small = document.createElement('small');
+      small.textContent = escapeString(u.created_at || u.created || '—');
+      tdCreated.appendChild(small);
+      tr.appendChild(tdCreated);
+
+      // Actions
+      const tdActions = document.createElement('td');
+
+      const btnView = document.createElement('button');
+      btnView.className = 'btnView';
+      btnView.dataset.id = String(u.id || '');
+      btnView.textContent = 'View';
+      btnView.addEventListener('click', () => viewUser(btnView.dataset.id));
+      tdActions.appendChild(btnView);
+
+      const btnReset = document.createElement('button');
+      btnReset.className = 'btnReset';
+      // store username encoded so we don't have weird whitespace in dataset
+      btnReset.dataset.username = encodeURIComponent(String(u.username || ''));
+      btnReset.textContent = 'Reset pwd';
+      btnReset.addEventListener('click', () => resetPassword(btnReset.dataset.username));
+      tdActions.appendChild(btnReset);
+
+      tr.appendChild(tdActions);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function loadUsers(search='') {
+    tbody.innerHTML = '<tr><td colspan="4" class="loading">Loading…</td></tr>';
+    setBusy(true);
+    try {
+      const q = '/admin/users?limit=200&search=' + encodeURIComponent(search || '');
+      const res = await adminFetch(q);
+      if (!res.ok) {
+        const t = await res.text().catch(()=>'<no body>');
+        tbody.innerHTML = `<tr><td colspan="4">Auth failed or server error (status ${res.status}). Check admin secret or server logs.</td></tr>`;
+        console.error('Admin users error', res.status, t);
+        return;
+      }
+      const data = await res.json().catch(()=>({}));
+      const users = data.users || [];
+      renderUsers(users);
+    } catch (err) {
+      console.error('loadUsers error', err);
+      tbody.innerHTML = '<tr><td colspan="4">Network or server error. See console.</td></tr>';
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function viewUser(id) {
+    detailsEl.textContent = 'Loading user details…';
+    setBusy(true);
+    try {
+      const res = await adminFetch('/admin/user/' + encodeURIComponent(id));
+      if (!res.ok) {
+        detailsEl.innerHTML = `<pre>Failed to load user details (status ${res.status}). Check admin secret.</pre>`;
+        return;
+      }
+      const data = await res.json().catch(()=>({}));
+      const user = data.user || {};
+      const history = Array.isArray(data.history) ? data.history : [];
+
+      // Build details using DOM to avoid injecting raw HTML
+      const wrap = document.createElement('div');
+
+      const h = document.createElement('h3');
+      h.textContent = `User: ${escapeString(user.username || '')} (id: ${escapeString(user.id || '')})`;
+      wrap.appendChild(h);
+
+      const p = document.createElement('p');
+      p.innerHTML = `<strong>Created:</strong> ${escapeString(user.created_at || user.created || '—')}`;
+      wrap.appendChild(p);
+
+      const h4 = document.createElement('h4');
+      h4.textContent = `Recent history (${history.length})`;
+      wrap.appendChild(h4);
+
+      if (!history.length) {
+        const d = document.createElement('div');
+        d.className = 'note';
+        d.textContent = 'No history rows for this user.';
+        wrap.appendChild(d);
+      } else {
+        const t = document.createElement('table');
+        t.style.width = '100%';
+        t.style.marginTop = '8px';
+        const thead = document.createElement('thead');
+        thead.innerHTML = '<tr><th>File</th><th>Processed</th><th>Points</th></tr>';
+        const tbodyH = document.createElement('tbody');
+        history.forEach(hrow => {
+          const r = document.createElement('tr');
+          const cFile = document.createElement('td');
+          cFile.textContent = escapeString(hrow.filename || '—');
+          const cProc = document.createElement('td');
+          const s = document.createElement('small');
+          s.textContent = escapeString(hrow.processed_at || hrow.created_at || '—');
+          cProc.appendChild(s);
+          const cPts = document.createElement('td');
+          cPts.textContent = String(hrow.eco_points_earned || 0);
+          r.appendChild(cFile); r.appendChild(cProc); r.appendChild(cPts);
+          tbodyH.appendChild(r);
+        });
+        t.appendChild(thead); t.appendChild(tbodyH);
+        wrap.appendChild(t);
+      }
+
+      detailsEl.innerHTML = '';
+      detailsEl.appendChild(wrap);
+
+    } catch (e) {
+      console.error(e);
+      detailsEl.innerHTML = '<pre>Network error loading details.</pre>';
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resetPassword(usernameEncoded) {
+    const username = decodeURIComponent(usernameEncoded || '');
+    if (!username) { alert('Invalid username'); return; }
+    if (!confirm('Reset password for ' + username + ' ? A temporary password will be returned.')) return;
+    setBusy(true);
+    try {
+      const body = { username };
+      const res = await adminFetch('/admin/reset-password', { method: 'POST', body: JSON.stringify(body) });
+      if (!res.ok) {
+        const txt = await res.text().catch(()=>'(no body)');
+        alert('Failed to reset password. Check admin secret. ' + txt);
+        return;
+      }
+      const data = await res.json().catch(()=>({}));
+      alert('Password reset OK. Temporary password:\n\n' + (data.tempPassword || data.temp_password || '(none returned)') + '\n\nShare securely with the user.');
+    } catch (e) {
+      console.error(e);
+      alert('Network error while resetting password.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function exportCSV() {
+    const secret = adminSecretInput.value && adminSecretInput.value.trim();
+    if (!secret && !confirm('No admin_secret provided. The export request will be sent without authentication header and likely be rejected. Continue?')) return;
+    setBusy(true);
+    try {
+      const res = await adminFetch('/admin/export/users.csv', { method: 'GET' });
+      if (!res.ok) {
+        const t = await res.text().catch(()=>'');
+        alert('Export failed (status ' + res.status + '). Check admin secret. ' + t);
+        return;
+      }
+      const blob = await res.blob();
+      const ts = new Date().toISOString().replace(/[:.]/g,'-');
+      const filename = `users_export_${ts}.csv`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert('Network error while exporting CSV.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Event wiring
+  btnSearch.addEventListener('click', ()=> loadUsers(searchInput.value || ''));
+  btnRefresh.addEventListener('click', ()=> { searchInput.value=''; loadUsers(''); });
+  btnExport.addEventListener('click', exportCSV);
+
+  // Enter key in search triggers search
+  searchInput.addEventListener('keydown', (ev)=> {
+    if (ev.key === 'Enter') { ev.preventDefault(); loadUsers(searchInput.value || ''); }
+  });
+
+  // initial load only if admin_secret present
+  if (adminSecretInput.value && adminSecretInput.value.trim()) loadUsers('');
+})();
+</script>
+</body>
+</html>
